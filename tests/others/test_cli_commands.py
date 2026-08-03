@@ -16,8 +16,10 @@
 One test per contract that would ship broken if regressed. Grouped by command.
 """
 
+import os
 import subprocess
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
 
 import pytest
 
@@ -29,6 +31,7 @@ from diffusers.commands.run import (
     _parse_pipeline_kwargs,
     _resolve_dtype,
     _resolve_media_inputs,
+    _save_output,
     _upload_inputs_to_sandbox,
 )
 from diffusers.commands.schema import _parse_docstring_args
@@ -247,6 +250,76 @@ class TestRunCommand:
         }
         assert backends == {AttentionBackendName.FLASH_HUB}
 
+    def test_save_output_ndarray_video_batch(self, tmp_path, monkeypatch):
+        # (B, F, H, W, C) arrays are batched video: one mp4 per batch item.
+        import numpy as np
+
+        exported: list[tuple[int, str]] = []
+        monkeypatch.setattr(
+            "diffusers.commands.run.export_to_video",
+            lambda frames, path, fps: exported.append((len(frames), path)),
+        )
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
+        saved = _save_output(np.zeros((2, 3, 8, 8, 3), dtype=np.float32), args)
+        assert [Path(p).suffix for p in saved] == [".mp4", ".mp4"]
+        assert [n for n, _ in exported] == [3, 3]
+
+    def test_save_output_ndarray_image_batch(self, tmp_path):
+        # (B, H, W, C) arrays are batched images: one png per item.
+        import numpy as np
+
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
+        saved = _save_output(np.zeros((2, 8, 8, 3), dtype=np.float32), args)
+        assert [Path(p).suffix for p in saved] == [".png", ".png"]
+        assert all(Path(p).exists() for p in saved)
+
+    def test_save_output_tensor_shapes(self, tmp_path, monkeypatch):
+        # `output_type="pt"` outputs are channels-first tensors: (B, C, F, H, W) video saves one
+        # mp4 per batch item, (B, C, H, W) images save one png per item.
+        import torch
+
+        exported: list[tuple[int, str]] = []
+        monkeypatch.setattr(
+            "diffusers.commands.run.export_to_video",
+            lambda frames, path, fps: exported.append((len(frames), path)),
+        )
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
+        saved = _save_output(torch.zeros((2, 3, 4, 8, 8)), args)
+        assert [Path(p).suffix for p in saved] == [".mp4", ".mp4"]
+        assert [n for n, _ in exported] == [4, 4]
+
+        saved = _save_output(torch.zeros((2, 3, 8, 8)), args)
+        assert [Path(p).suffix for p in saved] == [".png", ".png"]
+        assert all(Path(p).exists() for p in saved)
+
+    def test_save_output_nested_pil_video_batch(self, tmp_path, monkeypatch):
+        # list[list[PIL]] (video pipelines under explicit output_type="pil") saves one mp4 per
+        # inner sequence instead of falling through to the JSON dump.
+        from PIL import Image
+
+        exported: list[str] = []
+        monkeypatch.setattr("diffusers.commands.run.export_to_video", lambda frames, path, fps: exported.append(path))
+        frames = [Image.new("RGB", (8, 8)) for _ in range(3)]
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
+        saved = _save_output([frames, frames], args)
+        assert [Path(p).suffix for p in saved] == [".mp4", ".mp4"]
+        assert len(exported) == 2
+
+    def test_save_output_video_export_failure_saves_frames(self, tmp_path, monkeypatch):
+        # A broken export backend must not discard generated frames: each video's raw frames
+        # save as a (num_frames, H, W, C) .pt tensor instead.
+        import numpy as np
+        import torch
+
+        def broken_export(frames, path, fps):
+            raise ImportError("no video backend")
+
+        monkeypatch.setattr("diffusers.commands.run.export_to_video", broken_export)
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
+        saved = _save_output(np.zeros((2, 3, 8, 8, 3), dtype=np.float32), args)
+        assert [Path(p).suffix for p in saved] == [".pt", ".pt"]
+        assert torch.load(saved[0]).shape == (3, 8, 8, 3)
+
 
 class TestSchemaCommand:
     pretrained_model_name_or_path = "hf-internal-testing/tiny-flux-pipe"
@@ -305,6 +378,22 @@ class TestCustomBlocksCommand:
         broken.write_text("class Broken(:\n    pass\n")
         with pytest.raises(ValueError, match="Could not parse"):
             cmd._get_class_names(broken)
+
+    def test_packaging_writes_pipeline_index(self, tmp_path, monkeypatch):
+        # The packaged dir must be loadable by `ModularPipeline.from_pretrained` (what
+        # `diffusers-cli run` uses), which requires `modular_model_index.json` in addition to
+        # the block-level `modular_config.json`.
+        block_py = tmp_path / "block.py"
+        block_py.write_text(
+            "from diffusers.modular_pipelines import ModularPipelineBlocks\n"
+            "\n"
+            "class MyBlock(ModularPipelineBlocks):\n"
+            "    model_name = 'test'\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        CustomBlocksCommand(str(block_py), "MyBlock").run()
+        assert (tmp_path / "modular_config.json").exists()
+        assert (tmp_path / "modular_model_index.json").exists()
 
 
 class TestCli:
