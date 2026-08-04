@@ -20,7 +20,6 @@ detecting its runtime type, and can submit the same call to an HF Sandbox via `-
 
 from __future__ import annotations
 
-import inspect
 import io
 import json
 import os
@@ -655,15 +654,19 @@ def _get_generator(seed: int | None, device: str):
     return torch.Generator(device=generator_device).manual_seed(seed)
 
 
-def _unwrap_pipeline_output(result: Any) -> Any:
-    """Unwrap a pipeline-output object into the raw payload the saver can dispatch on."""
-    if hasattr(result, "images"):
-        return result.images
-    if hasattr(result, "frames"):
-        return result.frames[0]
-    if hasattr(result, "audios"):
-        return result.audios
-    return result
+def _unwrap_pipeline_output(result: Any) -> list[Any]:
+    """Resolve a pipeline-output object into the media payloads the saver dispatches on.
+
+    An output can carry more than one media field (e.g. LTX2 returns video in `frames` and a waveform in `audio`), so
+    every known field that is present is saved, not just the first match. Payloads keep their batch dimension —
+    `_save_output` dispatches on the full batched shape.
+    """
+    payloads = [
+        getattr(result, name)
+        for name in ("images", "frames", "audios", "audio")
+        if getattr(result, name, None) is not None
+    ]
+    return payloads or [result]
 
 
 # ---------------------------------------------------------------------------
@@ -721,6 +724,8 @@ def _as_frame_sequence(value: Any):
 def _as_audio_arrays(value: Any):
     if isinstance(value, np.ndarray) and value.ndim <= 2:
         return [value]
+    if isinstance(value, np.ndarray) and value.ndim == 3:
+        return list(value)
     if isinstance(value, (list, tuple)) and value and all(isinstance(v, np.ndarray) for v in value):
         return list(value)
     return None
@@ -758,39 +763,46 @@ def _save_audio_arrays(audios, sampling_rate: int, args: Namespace) -> list[str]
 
 
 def _save_videos(videos: list[Any], args: Namespace) -> list[str]:
-    """Write each frame sequence to mp4, one file per video.
+    """Write each frame sequence to mp4, plus every frame as `<video-stem>-frame-<NNNN>.png` beside it.
 
-    The frames took real GPU time to produce, so a missing or broken export backend must never discard them: on export
-    failure each video's raw frames are saved as a `.pt` tensor instead and a warning tells the user how to export
-    them.
+    The stem prefix ties each frame to its video and keeps basenames unique across a batch — required by `--push-to`,
+    which uploads by basename. Frames are written first and need no video backend, so they double as the safety net: if
+    `export_to_video` fails (e.g. `imageio` missing), the frames are already on disk and only the mp4 is skipped.
     """
     mp4_paths = _resolve_output_paths(len(videos), args.output, ext="mp4")
-    try:
-        for frames, path in zip(videos, mp4_paths):
-            export_to_video(list(frames), str(path), fps=args.fps)
-        return [str(p) for p in mp4_paths]
-    except Exception as e:
-        pt_paths = _resolve_output_paths(len(videos), args.output, ext="pt")
-        for frames, path in zip(videos, pt_paths):
-            torch.save(torch.as_tensor(np.stack([np.asarray(frame) for frame in frames])), path)
-        logger.warning(
-            f"Video export failed ({e}); saved the raw frames of {len(videos)} video(s) as "
-            f"(num_frames, H, W, C) `.pt` tensors under {Path(pt_paths[0]).parent} instead — "
-            "nothing was discarded. Load with `torch.load` and write with "
-            "`diffusers.utils.export_to_video` once `imageio` and `imageio-ffmpeg` are installed."
-        )
-        return [str(p) for p in pt_paths]
+    saved: list[str] = []
+    for frames, path in zip(videos, mp4_paths):
+        frames = list(frames)
+        for i, frame in enumerate(frames):
+            if not isinstance(frame, Image.Image):
+                arr = np.asarray(frame)
+                if arr.dtype != np.uint8:
+                    arr = (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
+                frame = Image.fromarray(arr)
+            frame_path = path.with_name(f"{path.stem}-frame-{i:04d}.png")
+            frame.save(frame_path)
+            saved.append(str(frame_path))
+        try:
+            export_to_video(frames, str(path), fps=args.fps)
+            saved.append(str(path))
+        except Exception as e:
+            logger.warning(
+                f"Video export failed ({e}); the individual frames of {path.stem} are saved next to it as PNGs. "
+                "Install a video backend with: pip install imageio imageio-ffmpeg"
+            )
+    return saved
 
 
 def _save_output(value: Any, args: Namespace) -> list[str]:
     """Save `value` by dispatching on its runtime type and, for arrays, its shape."""
-    # `run` asks pipelines for `output_type="pt"`; tensor outputs are channels-first
-    # ((B, C, H, W) images, (B, C, F, H, W) video), while the array branches below expect
-    # channels-last — convert here so one set of shape branches handles both.
+    # Tensors arrive only when the user explicitly asked for `output_type="pt"` (or the pipeline
+    # natively defaults to it, e.g. StableAudio). Postprocessed pt outputs are channels-first per
+    # frame — (B, C, H, W) images, (B, F, C, H, W) video from `postprocess_video` — while the array
+    # branches below expect channels-last, so convert here.
     if isinstance(value, torch.Tensor):
         arr = value.detach().to(torch.float32).cpu().numpy()
         if arr.ndim == 5:
-            arr = arr.transpose(0, 2, 3, 4, 1)
+            arr = arr.transpose(0, 1, 3, 4, 2)
         elif arr.ndim == 4:
             arr = arr.transpose(0, 2, 3, 1)
         value = arr
@@ -828,11 +840,10 @@ def _save_output(value: Any, args: Namespace) -> list[str]:
     if audios is not None:
         return _save_audio_arrays(audios, args.sampling_rate or 16000, args)
 
-    # Anything that isn't a recognized media shape is saved as a torch tensor: `torch.save`
-    # handles tensors natively and pickles everything else, so no output is ever dropped.
-    path = _resolve_output_paths(1, args.output, ext="pt")[0]
-    torch.save(value, path)
-    return [str(path)]
+    raise ValueError(
+        f"Cannot save pipeline output of type {type(value).__name__!r}: not a recognized image, video, or audio "
+        "payload. For modular pipelines, pass `--output-key` to select a savable intermediate (e.g. `images`)."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1210,13 +1221,6 @@ class RunCommand(BaseDiffusersCLICommand):
         pipeline = _load_pipeline(self.args)
         is_modular = isinstance(pipeline, diffusers.ModularPipeline)
 
-        # Ask for tensors instead of PIL: the shape then tells `_save_output` exactly what the
-        # output is — a flat PIL list can't distinguish one video from a batch of images. An
-        # explicit user `output_type` always wins.
-        if not is_modular and "output_type" not in call_kwargs:
-            if "output_type" in inspect.signature(pipeline.__call__).parameters:
-                call_kwargs["output_type"] = "pt"
-
         if self.args.output_key is not None:
             call_kwargs["output"] = self.args.output_key
 
@@ -1232,18 +1236,10 @@ class RunCommand(BaseDiffusersCLICommand):
             # transformer compute but ranks reduce to the same final tensors). Save/push/print
             # from rank 0 only to avoid clobbering bucket files 4x and printing 4x.
             if os.environ.get("RANK", "0") == "0":
-                savable = result if is_modular else _unwrap_pipeline_output(result)
-                try:
-                    saved = _save_output(savable, self.args)
-                except Exception as e:
-                    # The output took real GPU time to produce — never let a save failure
-                    # discard it. torch.save handles tensors natively and pickles everything
-                    # else (ndarrays, PIL images, lists).
-
-                    path = _resolve_output_paths(1, self.args.output, ext="pt")[0]
-                    torch.save(savable, path)
-                    logger.warning(f"Saving the output failed ({e}); saving pipeline output tensors to {path} ")
-                    saved = [str(path)]
+                savables = [result] if is_modular else _unwrap_pipeline_output(result)
+                saved = []
+                for savable in savables:
+                    saved.extend(_save_output(savable, self.args))
                 pushed = _push_outputs(self.args, saved)
 
                 out.result(
