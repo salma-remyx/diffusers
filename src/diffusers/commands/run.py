@@ -96,6 +96,7 @@ _DEFAULT_REMOTE_DEPS = (
     "safetensors",
     "sentencepiece",  # required by several text-encoder tokenizers (T5, LLaMA, …)
     "ftfy",  # required by older CLIP text-encoder paths
+    "peft",  # required by `load_lora_weights` when `--lora` is passed
     "imageio",  # preferred `export_to_video` backend
     "imageio-ffmpeg",  # bundles a static ffmpeg; the cv2 fallback needs system libs the slim image lacks
 )
