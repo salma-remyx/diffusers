@@ -757,33 +757,6 @@ def _save_audio_arrays(audios, sampling_rate: int, args: Namespace) -> list[str]
     return saved
 
 
-def _warn_missing_video_export_backend() -> None:
-    """Warn before pipeline load if video output could not be written as mp4.
-
-    Runs pre-flight (like early media resolution) both locally and inside the `--remote` sandbox, so a broken backend
-    surfaces before minutes of download and inference rather than at save time. A warning, not an error: image/audio
-    outputs don't need the backend, and `_save_videos` falls back to `.pt` frame dumps.
-    """
-    try:
-        import imageio  # noqa: F401
-        import imageio_ffmpeg  # noqa: F401
-
-        return
-    except ImportError:
-        pass
-    try:
-        # cv2 raises OSError (not ImportError) when its native system libraries are missing.
-        import cv2  # noqa: F401
-
-        return
-    except Exception:
-        pass
-    logger.warning(
-        "No working video export backend found — if this pipeline outputs video, raw frames will "
-        "be saved as `.pt` tensors instead of mp4. Install one with: pip install imageio imageio-ffmpeg"
-    )
-
-
 def _save_videos(videos: list[Any], args: Namespace) -> list[str]:
     """Write each frame sequence to mp4, one file per video.
 
@@ -1234,7 +1207,6 @@ class RunCommand(BaseDiffusersCLICommand):
         # Resolve media before loading pipeline weights so dead URLs / missing files fail
         # fast — cheap to fetch, expensive to load a 20GB model just to hit a 404.
         _resolve_media_inputs(call_kwargs)
-        _warn_missing_video_export_backend()
         pipeline = _load_pipeline(self.args)
         is_modular = isinstance(pipeline, diffusers.ModularPipeline)
 
