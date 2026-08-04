@@ -32,6 +32,7 @@ from diffusers.commands.run import (
     _resolve_dtype,
     _resolve_media_inputs,
     _save_output,
+    _unwrap_pipeline_output,
     _upload_inputs_to_sandbox,
 )
 from diffusers.commands.schema import _parse_docstring_args
@@ -250,32 +251,9 @@ class TestRunCommand:
         }
         assert backends == {AttentionBackendName.FLASH_HUB}
 
-    def test_save_output_ndarray_video_batch(self, tmp_path, monkeypatch):
-        # (B, F, H, W, C) arrays are batched video: one mp4 per batch item.
-        import numpy as np
-
-        exported: list[tuple[int, str]] = []
-        monkeypatch.setattr(
-            "diffusers.commands.run.export_to_video",
-            lambda frames, path, fps: exported.append((len(frames), path)),
-        )
-        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
-        saved = _save_output(np.zeros((2, 3, 8, 8, 3), dtype=np.float32), args)
-        assert [Path(p).suffix for p in saved] == [".mp4", ".mp4"]
-        assert [n for n, _ in exported] == [3, 3]
-
-    def test_save_output_ndarray_image_batch(self, tmp_path):
-        # (B, H, W, C) arrays are batched images: one png per item.
-        import numpy as np
-
-        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
-        saved = _save_output(np.zeros((2, 8, 8, 3), dtype=np.float32), args)
-        assert [Path(p).suffix for p in saved] == [".png", ".png"]
-        assert all(Path(p).exists() for p in saved)
-
-    def test_save_output_tensor_shapes(self, tmp_path, monkeypatch):
-        # `output_type="pt"` outputs are channels-first tensors: (B, C, F, H, W) video saves one
-        # mp4 per batch item, (B, C, H, W) images save one png per item.
+    def test_save_output_video_saves_mp4_and_frames(self, tmp_path, monkeypatch):
+        # `output_type="pt"` video is (B, F, C, H, W) from `postprocess_video`: one mp4 per batch
+        # item, plus every frame as `<video-stem>-frame-<NNNN>.png` beside it.
         import torch
 
         exported: list[tuple[int, str]] = []
@@ -284,17 +262,26 @@ class TestRunCommand:
             lambda frames, path, fps: exported.append((len(frames), path)),
         )
         args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
-        saved = _save_output(torch.zeros((2, 3, 4, 8, 8)), args)
-        assert [Path(p).suffix for p in saved] == [".mp4", ".mp4"]
+        saved = _save_output(torch.zeros((2, 4, 3, 8, 8)), args)
+        names = sorted(Path(p).name for p in saved)
         assert [n for n, _ in exported] == [4, 4]
+        assert [n for n in names if n.endswith(".mp4")] == ["0000.mp4", "0001.mp4"]
+        frame_names = [n for n in names if n.endswith(".png")]
+        assert frame_names == sorted(f"{v:04d}-frame-{i:04d}.png" for v in range(2) for i in range(4))
+        assert all((tmp_path / n).exists() for n in frame_names)
 
+    def test_save_output_tensor_image_batch(self, tmp_path):
+        # `output_type="pt"` images are channels-first (B, C, H, W): one png per batch item.
+        import torch
+
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
         saved = _save_output(torch.zeros((2, 3, 8, 8)), args)
         assert [Path(p).suffix for p in saved] == [".png", ".png"]
         assert all(Path(p).exists() for p in saved)
 
     def test_save_output_nested_pil_video_batch(self, tmp_path, monkeypatch):
-        # list[list[PIL]] (video pipelines under explicit output_type="pil") saves one mp4 per
-        # inner sequence instead of falling through to the JSON dump.
+        # list[list[PIL]] (video pipelines under their default output_type="pil") saves one mp4
+        # per inner sequence, plus the per-frame pngs.
         from PIL import Image
 
         exported: list[str] = []
@@ -302,23 +289,42 @@ class TestRunCommand:
         frames = [Image.new("RGB", (8, 8)) for _ in range(3)]
         args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
         saved = _save_output([frames, frames], args)
-        assert [Path(p).suffix for p in saved] == [".mp4", ".mp4"]
         assert len(exported) == 2
+        assert sorted(Path(p).suffix for p in saved) == [".mp4"] * 2 + [".png"] * 6
 
-    def test_save_output_video_export_failure_saves_frames(self, tmp_path, monkeypatch):
-        # A broken export backend must not discard generated frames: each video's raw frames
-        # save as a (num_frames, H, W, C) .pt tensor instead.
-        import numpy as np
+    def test_save_output_stereo_audio(self, tmp_path):
+        # (B, C, samples) waveforms (e.g. StableAudio's native output_type="pt") save as
+        # multi-channel wavs instead of falling through as unrecognized.
+        import wave
+
         import torch
 
-        def broken_export(frames, path, fps):
-            raise ImportError("no video backend")
+        args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=44100)
+        saved = _save_output(torch.zeros((1, 2, 1000)), args)
+        assert [Path(p).suffix for p in saved] == [".wav"]
+        with wave.open(saved[0]) as w:
+            assert w.getnchannels() == 2
+            assert w.getnframes() == 1000
 
-        monkeypatch.setattr("diffusers.commands.run.export_to_video", broken_export)
+    def test_unwrap_pipeline_output_multi_media(self):
+        # Every media field present on an output is saved, not just the first match (LTX2 returns
+        # both `frames` and `audio`), and payloads keep their batch dimension.
+        import torch
+
+        class Output:
+            frames = torch.zeros((1, 4, 3, 8, 8))
+            audio = torch.zeros((1, 2, 1000))
+
+        payloads = _unwrap_pipeline_output(Output())
+        assert len(payloads) == 2
+        assert payloads[0].shape == (1, 4, 3, 8, 8)
+        assert payloads[1].shape == (1, 2, 1000)
+
+    def test_save_output_unrecognized_raises(self, tmp_path):
+        # Unrecognized payloads (e.g. a modular PipelineState) raise instead of being pickled.
         args = Namespace(output=str(tmp_path) + os.sep, fps=24, sampling_rate=None)
-        saved = _save_output(np.zeros((2, 3, 8, 8, 3), dtype=np.float32), args)
-        assert [Path(p).suffix for p in saved] == [".pt", ".pt"]
-        assert torch.load(saved[0]).shape == (3, 8, 8, 3)
+        with pytest.raises(ValueError, match="--output-key"):
+            _save_output({"not": "media"}, args)
 
 
 class TestSchemaCommand:
