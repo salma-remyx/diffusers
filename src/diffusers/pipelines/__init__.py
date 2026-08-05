@@ -208,6 +208,7 @@ else:
     _import_structure["cogview3"] = ["CogView3PlusPipeline"]
     _import_structure["cogview4"] = ["CogView4Pipeline", "CogView4ControlPipeline"]
     _import_structure["consisid"] = ["ConsisIDPipeline"]
+    _import_structure["consistencytta"] = ["ConsistencyTTAPipeline"]
     _import_structure["cosmos"] = [
         "Cosmos2_5_PredictBasePipeline",
         "Cosmos2_5_TransferPipeline",
@@ -610,6 +611,7 @@ if TYPE_CHECKING or DIFFUSERS_SLOW_IMPORT:
         )
         from .cogview3 import CogView3PlusPipeline
         from .cogview4 import CogView4ControlPipeline, CogView4Pipeline
+        from .consistencytta import ConsistencyTTAPipeline
         from .controlnet import (
             BlipDiffusionControlNetPipeline,
             StableDiffusionControlNetImg2ImgPipeline,

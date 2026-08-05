@@ -27,16 +27,24 @@ from pipeline_prompt_diffusion import PromptDiffusionPipeline
 
 from PIL import ImageOps
 
-image_a = ImageOps.invert(load_image("https://github.com/Zhendong-Wang/Prompt-Diffusion/blob/main/images_to_try/house_line.png?raw=true"))
+image_a = ImageOps.invert(
+    load_image("https://github.com/Zhendong-Wang/Prompt-Diffusion/blob/main/images_to_try/house_line.png?raw=true")
+)
 
 image_b = load_image("https://github.com/Zhendong-Wang/Prompt-Diffusion/blob/main/images_to_try/house.png?raw=true")
-query = ImageOps.invert(load_image("https://github.com/Zhendong-Wang/Prompt-Diffusion/blob/main/images_to_try/new_01.png?raw=true"))
+query = ImageOps.invert(
+    load_image("https://github.com/Zhendong-Wang/Prompt-Diffusion/blob/main/images_to_try/new_01.png?raw=true")
+)
 
 # load prompt diffusion controlnet and prompt diffusion
 
-controlnet = PromptDiffusionControlNetModel.from_pretrained("iczaw/prompt-diffusion-diffusers", subfolder="controlnet", dtype=torch.float16)
+controlnet = PromptDiffusionControlNetModel.from_pretrained(
+    "iczaw/prompt-diffusion-diffusers", subfolder="controlnet", dtype=torch.float16
+)
 model_id = "path-to-model"
-pipe = PromptDiffusionPipeline.from_pretrained("iczaw/prompt-diffusion-diffusers", subfolder="base", controlnet=controlnet, dtype=torch.float16, variant="fp16")
+pipe = PromptDiffusionPipeline.from_pretrained(
+    "iczaw/prompt-diffusion-diffusers", subfolder="base", controlnet=controlnet, dtype=torch.float16, variant="fp16"
+)
 
 # speed up diffusion process with faster scheduler and memory optimization
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
@@ -45,5 +53,7 @@ pipe.enable_xformers_memory_efficient_attention()
 pipe.enable_model_cpu_offload()
 # generate image
 generator = torch.manual_seed(0)
-image = pipe("a tortoise", num_inference_steps=20, generator=generator, image_pair=[image_a,image_b], image=query).images[0]
+image = pipe(
+    "a tortoise", num_inference_steps=20, generator=generator, image_pair=[image_a, image_b], image=query
+).images[0]
 ```

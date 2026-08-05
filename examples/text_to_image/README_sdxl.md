@@ -41,6 +41,7 @@ Or if your environment doesn't support an interactive shell (e.g., a notebook)
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -87,7 +88,7 @@ accelerate launch train_text_to_image_sdxl.py \
 from diffusers import DiffusionPipeline
 import torch
 
-model_path = "you-model-id-goes-here" # <-- change this
+model_path = "you-model-id-goes-here"  # <-- change this
 pipe = DiffusionPipeline.from_pretrained(model_path, dtype=torch.float16)
 pipe.to("cuda")
 
@@ -111,12 +112,12 @@ pipe.to(device)
 prompt = "A naruto with green eyes and red legs."
 start = time()
 image = pipe(prompt, num_inference_steps=inference_steps).images[0]
-print(f'Compilation time is {time()-start} sec')
+print(f"Compilation time is {time() - start} sec")
 image.save("naruto.png")
 
 start = time()
 image = pipe(prompt, num_inference_steps=inference_steps).images[0]
-print(f'Inference time is {time()-start} sec after compilation')
+print(f"Inference time is {time() - start} sec after compilation")
 ```
 
 Note: There is a warmup step in PyTorch XLA. This takes longer because of

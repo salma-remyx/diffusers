@@ -133,12 +133,14 @@ You can run `demo.ipynb` to visualize the generated images.
 Example prompts:
 
 ```python
-prompt = 'A realistic image of landscape scene depicting a green car parking on the left of a blue truck, with a red air balloon and a bird in the sky'
-boxes = [[0.041015625, 0.548828125, 0.453125, 0.859375],
-         [0.525390625, 0.552734375, 0.93359375, 0.865234375],
-         [0.12890625, 0.015625, 0.412109375, 0.279296875],
-         [0.578125, 0.08203125, 0.857421875, 0.27734375]]
-gligen_phrases = ['a green car', 'a blue truck', 'a red air balloon', 'a bird']
+prompt = "A realistic image of landscape scene depicting a green car parking on the left of a blue truck, with a red air balloon and a bird in the sky"
+boxes = [
+    [0.041015625, 0.548828125, 0.453125, 0.859375],
+    [0.525390625, 0.552734375, 0.93359375, 0.865234375],
+    [0.12890625, 0.015625, 0.412109375, 0.279296875],
+    [0.578125, 0.08203125, 0.857421875, 0.27734375],
+]
+gligen_phrases = ["a green car", "a blue truck", "a red air balloon", "a bird"]
 ```
 
 Example images:

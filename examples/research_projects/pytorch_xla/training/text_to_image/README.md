@@ -125,7 +125,7 @@ export CACHE_DIR=/tmp/
 import torch
 import os
 import sys
-import  numpy as np
+import numpy as np
 
 import torch_xla.core.xla_model as xm
 from time import time
@@ -136,13 +136,11 @@ CACHE_DIR = os.environ.get("CACHE_DIR", None)
 if CACHE_DIR:
     xr.initialize_cache(CACHE_DIR, readonly=False)
 
+
 def main():
     device = xm.xla_device()
     model_path = "jffacevedo/pxla_trained_model"
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_path, 
-        dtype=torch.bfloat16
-    )
+    pipe = StableDiffusionPipeline.from_pretrained(model_path, dtype=torch.bfloat16)
     pipe.to(device)
     prompt = ["A naruto with green eyes and red legs."]
     start = time()
@@ -155,7 +153,8 @@ def main():
     print(f"generation time (after compile) : {time() - start}")
     image.save("naruto.png")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
 ```
 

@@ -42,6 +42,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 ### Cat example 😺
@@ -195,12 +196,8 @@ Once you have trained a model using the above command, you can run inference usi
 import torch
 from diffusers import DiffusionPipeline
 
-pipe = DiffusionPipeline.from_pretrained(
-    "CompVis/stable-diffusion-v1-4", dtype=torch.float16
-).to("cuda")
-pipe.unet.load_attn_procs(
-    "path-to-save-model", weight_name="pytorch_custom_diffusion_weights.bin"
-)
+pipe = DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", dtype=torch.float16).to("cuda")
+pipe.unet.load_attn_procs("path-to-save-model", weight_name="pytorch_custom_diffusion_weights.bin")
 pipe.load_textual_inversion("path-to-save-model", weight_name="<new1>.bin")
 
 image = pipe(
@@ -223,8 +220,7 @@ model_id = "sayakpaul/custom-diffusion-cat"
 card = RepoCard.load(model_id)
 base_model_id = card.data.to_dict()["base_model"]
 
-pipe = DiffusionPipeline.from_pretrained(base_model_id, dtype=torch.float16).to(
-"cuda")
+pipe = DiffusionPipeline.from_pretrained(base_model_id, dtype=torch.float16).to("cuda")
 pipe.unet.load_attn_procs(model_id, weight_name="pytorch_custom_diffusion_weights.bin")
 pipe.load_textual_inversion(model_id, weight_name="<new1>.bin")
 
@@ -248,8 +244,7 @@ model_id = "sayakpaul/custom-diffusion-cat-wooden-pot"
 card = RepoCard.load(model_id)
 base_model_id = card.data.to_dict()["base_model"]
 
-pipe = DiffusionPipeline.from_pretrained(base_model_id, dtype=torch.float16).to(
-"cuda")
+pipe = DiffusionPipeline.from_pretrained(base_model_id, dtype=torch.float16).to("cuda")
 pipe.unet.load_attn_procs(model_id, weight_name="pytorch_custom_diffusion_weights.bin")
 pipe.load_textual_inversion(model_id, weight_name="<new1>.bin")
 pipe.load_textual_inversion(model_id, weight_name="<new2>.bin")

@@ -104,38 +104,40 @@ accelerate launch --mixed_precision="fp16" --multi_gpu train_instruct_pix2pix_sd
  Once training is complete, we can perform inference:
 
  ```python
-import PIL
-import requests
-import torch
-from diffusers import StableDiffusionXLInstructPix2PixPipeline
+ import PIL
+ import requests
+ import torch
+ from diffusers import StableDiffusionXLInstructPix2PixPipeline
 
-model_id = "your_model_id" # <- replace this
-pipe = StableDiffusionXLInstructPix2PixPipeline.from_pretrained(model_id, dtype=torch.float16).to("cuda")
-generator = torch.Generator("cuda").manual_seed(0)
+ model_id = "your_model_id"  # <- replace this
+ pipe = StableDiffusionXLInstructPix2PixPipeline.from_pretrained(model_id, dtype=torch.float16).to("cuda")
+ generator = torch.Generator("cuda").manual_seed(0)
 
-url = "https://datasets-server.huggingface.co/assets/fusing/instructpix2pix-1000-samples/--/fusing--instructpix2pix-1000-samples/train/23/input_image/image.jpg"
+ url = "https://datasets-server.huggingface.co/assets/fusing/instructpix2pix-1000-samples/--/fusing--instructpix2pix-1000-samples/train/23/input_image/image.jpg"
 
 
-def download_image(url):
-    image = PIL.Image.open(requests.get(url, stream=True).raw)
-    image = PIL.ImageOps.exif_transpose(image)
-    image = image.convert("RGB")
-    return image
+ def download_image(url):
+     image = PIL.Image.open(requests.get(url, stream=True).raw)
+     image = PIL.ImageOps.exif_transpose(image)
+     image = image.convert("RGB")
+     return image
 
-image = download_image(url)
-prompt = "make it Japan"
-num_inference_steps = 20
-image_guidance_scale = 1.5
-guidance_scale = 10
 
-edited_image = pipe(prompt,
-    image=image,
-    num_inference_steps=num_inference_steps,
-    image_guidance_scale=image_guidance_scale,
-    guidance_scale=guidance_scale,
-    generator=generator,
-).images[0]
-edited_image.save("edited_image.png")
+ image = download_image(url)
+ prompt = "make it Japan"
+ num_inference_steps = 20
+ image_guidance_scale = 1.5
+ guidance_scale = 10
+
+ edited_image = pipe(
+     prompt,
+     image=image,
+     num_inference_steps=num_inference_steps,
+     image_guidance_scale=image_guidance_scale,
+     guidance_scale=guidance_scale,
+     generator=generator,
+ ).images[0]
+ edited_image.save("edited_image.png")
 ```
 
 We encourage you to play with the following three parameters to control

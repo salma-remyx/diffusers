@@ -61,6 +61,7 @@ Or if your environment doesn't support an interactive shell (e.g., a notebook)
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -80,7 +81,8 @@ from huggingface_hub import snapshot_download
 local_dir = "./dog"
 snapshot_download(
     "diffusers/dog-example",
-    local_dir=local_dir, repo_type="dataset",
+    local_dir=local_dir,
+    repo_type="dataset",
     ignore_patterns=".gitattributes",
 )
 ```

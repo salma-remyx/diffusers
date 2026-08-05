@@ -111,7 +111,7 @@ import torch
 pipe = AutoPipelineForText2Image.from_pretrained(output_dir, dtype=torch.float16)
 pipe.enable_model_cpu_offload()
 
-prompt='A robot naruto, 4k photo'
+prompt = "A robot naruto, 4k photo"
 images = pipe(prompt=prompt).images
 images[0].save("robot-naruto.png")
 ```
@@ -124,7 +124,9 @@ model_path = "path_to_saved_model"
 
 unet = UNet2DConditionModel.from_pretrained(model_path + "/checkpoint-<N>/unet")
 
-pipe = AutoPipelineForText2Image.from_pretrained("kandinsky-community/kandinsky-2-2-decoder", unet=unet, dtype=torch.float16)
+pipe = AutoPipelineForText2Image.from_pretrained(
+    "kandinsky-community/kandinsky-2-2-decoder", unet=unet, dtype=torch.float16
+)
 pipe.enable_model_cpu_offload()
 
 image = pipe(prompt="A robot naruto, 4k photo").images[0]
@@ -166,11 +168,13 @@ from diffusers import AutoPipelineForText2Image, DiffusionPipeline
 import torch
 
 pipe_prior = DiffusionPipeline.from_pretrained(output_dir, dtype=torch.float16)
-prior_components = {"prior_" + k: v for k,v in pipe_prior.components.items()}
-pipe = AutoPipelineForText2Image.from_pretrained("kandinsky-community/kandinsky-2-2-decoder", **prior_components, dtype=torch.float16)
+prior_components = {"prior_" + k: v for k, v in pipe_prior.components.items()}
+pipe = AutoPipelineForText2Image.from_pretrained(
+    "kandinsky-community/kandinsky-2-2-decoder", **prior_components, dtype=torch.float16
+)
 
 pipe.enable_model_cpu_offload()
-prompt='A robot naruto, 4k photo'
+prompt = "A robot naruto, 4k photo"
 images = pipe(prompt=prompt, negative_prompt=negative_prompt).images
 images[0]
 ```
@@ -285,7 +289,7 @@ pipe = AutoPipelineForText2Image.from_pretrained("kandinsky-community/kandinsky-
 pipe.unet.load_attn_procs(output_dir)
 pipe.enable_model_cpu_offload()
 
-prompt='A robot naruto, 4k photo'
+prompt = "A robot naruto, 4k photo"
 image = pipe(prompt=prompt).images[0]
 image.save("robot_naruto.png")
 ```
@@ -300,7 +304,7 @@ pipe = AutoPipelineForText2Image.from_pretrained("kandinsky-community/kandinsky-
 pipe.prior_prior.load_attn_procs(output_dir)
 pipe.enable_model_cpu_offload()
 
-prompt='A robot naruto, 4k photo'
+prompt = "A robot naruto, 4k photo"
 image = pipe(prompt=prompt).images[0]
 image.save("robot_naruto.png")
 image

@@ -189,15 +189,21 @@ from typing import Optional
 from diffusers import StableDiffusionPipeline
 from diffusers.models.lora import LoRACompatibleConv
 
+
 def seamless_tiling(pipeline, x_axis, y_axis):
-    def asymmetric_conv2d_convforward(self, input: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor] = None):
+    def asymmetric_conv2d_convforward(
+        self, input: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor] = None
+    ):
         self.paddingX = (self._reversed_padding_repeated_twice[0], self._reversed_padding_repeated_twice[1], 0, 0)
         self.paddingY = (0, 0, self._reversed_padding_repeated_twice[2], self._reversed_padding_repeated_twice[3])
         working = torch.nn.functional.pad(input, self.paddingX, mode=x_mode)
         working = torch.nn.functional.pad(working, self.paddingY, mode=y_mode)
-        return torch.nn.functional.conv2d(working, weight, bias, self.stride, torch.nn.modules.utils._pair(0), self.dilation, self.groups)
-    x_mode = 'circular' if x_axis else 'constant'
-    y_mode = 'circular' if y_axis else 'constant'
+        return torch.nn.functional.conv2d(
+            working, weight, bias, self.stride, torch.nn.modules.utils._pair(0), self.dilation, self.groups
+        )
+
+    x_mode = "circular" if x_axis else "constant"
+    y_mode = "circular" if y_axis else "constant"
     targets = [pipeline.vae, pipeline.text_encoder, pipeline.unet]
     convolution_layers = []
     for target in targets:
@@ -206,15 +212,18 @@ def seamless_tiling(pipeline, x_axis, y_axis):
                 convolution_layers.append(module)
     for layer in convolution_layers:
         if isinstance(layer, LoRACompatibleConv) and layer.lora_layer is None:
-            layer.lora_layer = lambda * x: 0
+            layer.lora_layer = lambda *x: 0
         layer._conv_forward = asymmetric_conv2d_convforward.__get__(layer, torch.nn.Conv2d)
     return pipeline
 
-pipeline = StableDiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5", dtype=torch.float16, use_safetensors=True)
+
+pipeline = StableDiffusionPipeline.from_pretrained(
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", dtype=torch.float16, use_safetensors=True
+)
 pipeline.enable_model_cpu_offload()
 prompt = ["texture of a red brick wall"]
 seed = 123456
-generator = torch.Generator(device='cuda').manual_seed(seed)
+generator = torch.Generator(device="cuda").manual_seed(seed)
 
 pipeline = seamless_tiling(pipeline=pipeline, x_axis=True, y_axis=True)
 image = pipeline(
@@ -224,12 +233,12 @@ image = pipeline(
     num_inference_steps=20,
     guidance_scale=7,
     num_images_per_prompt=1,
-    generator=generator
+    generator=generator,
 ).images[0]
 seamless_tiling(pipeline=pipeline, x_axis=False, y_axis=False)
 
 torch.cuda.empty_cache()
-image.save('image.png')
+image.save("image.png")
 ```
 
 ### Prompt Scheduling callback
@@ -335,15 +344,11 @@ class SDXLPromptSchedulingCallback(PipelineCallback):
         cutoff_step_ratio=None,
         cutoff_step_index=None,
     ):
-        super().__init__(
-            cutoff_step_ratio=cutoff_step_ratio, cutoff_step_index=cutoff_step_index
-        )
+        super().__init__(cutoff_step_ratio=cutoff_step_ratio, cutoff_step_index=cutoff_step_index)
 
     tensor_inputs = ["prompt_embeds", "add_text_embeds", "add_time_ids"]
 
-    def callback_fn(
-        self, pipeline, step_index, timestep, callback_kwargs
-    ) -> dict[str, Any]:
+    def callback_fn(self, pipeline, step_index, timestep, callback_kwargs) -> dict[str, Any]:
         cutoff_step_ratio = self.config.cutoff_step_ratio
         cutoff_step_index = self.config.cutoff_step_index
         if isinstance(self.config.encoded_prompt, tuple):
@@ -361,9 +366,7 @@ class SDXLPromptSchedulingCallback(PipelineCallback):
 
         # Use cutoff_step_index if it's not None, otherwise use cutoff_step_ratio
         cutoff_step = (
-            cutoff_step_index
-            if cutoff_step_index is not None
-            else int(pipeline.num_timesteps * cutoff_step_ratio)
+            cutoff_step_index if cutoff_step_index is not None else int(pipeline.num_timesteps * cutoff_step_ratio)
         )
 
         if step_index == cutoff_step:

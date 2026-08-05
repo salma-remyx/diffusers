@@ -41,20 +41,20 @@ async def generate_image(image_input: TextToImageInput):
         pipeline = StableDiffusion3Pipeline.from_pipe(shared_pipeline.pipeline, scheduler=scheduler)
         generator = torch.Generator(device="cuda")
         generator.manual_seed(random.randint(0, 10000000))
-        output = await loop.run_in_executor(None, lambda: pipeline(image_input.prompt, generator = generator))
+        output = await loop.run_in_executor(None, lambda: pipeline(image_input.prompt, generator=generator))
         logger.info(f"output: {output}")
         image_url = save_image(output.images[0])
         return {"data": [{"url": image_url}]}
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e
-        elif hasattr(e, 'message'):
+        elif hasattr(e, "message"):
             raise HTTPException(status_code=500, detail=e.message + traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e) + traceback.format_exc())
 ```
 The `generate_image` function is defined as asynchronous with the [async](https://fastapi.tiangolo.com/async/) keyword so that FastAPI knows that whatever is happening in this function won't necessarily return a result right away. Once it hits some point in the function that it needs to await some other [Task](https://docs.python.org/3/library/asyncio-task.html#asyncio.Task), the main thread goes back to answering other HTTP requests. This is shown in the code below with the [await](https://fastapi.tiangolo.com/async/#async-and-await) keyword.
 ```py
-output = await loop.run_in_executor(None, lambda: pipeline(image_input.prompt, generator = generator))
+output = await loop.run_in_executor(None, lambda: pipeline(image_input.prompt, generator=generator))
 ```
 At this point, the execution of the pipeline function is placed onto a [new thread](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor), and the main thread performs other things until a result is returned from the `pipeline`.
 

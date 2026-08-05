@@ -100,10 +100,10 @@ from diffusers import CogView4ControlPipeline
 from diffusers.utils import load_image
 from PIL import Image
 import numpy as np
-import torch 
+import torch
 
 pipe = CogView4ControlPipeline.from_pretrained("THUDM/CogView4-6B", dtype=torch.bfloat16).to("cuda")
-pipe.load_lora_weights("...") # change this.
+pipe.load_lora_weights("...")  # change this.
 
 open_pose = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
 
@@ -111,17 +111,17 @@ open_pose = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
 url = "https://huggingface.co/Adapter/t2iadapter/resolve/main/people.jpg"
 image = load_image(url)
 image = open_pose(image, detect_resolution=512, image_resolution=1024)
-image = np.array(image)[:, :, ::-1]           
+image = np.array(image)[:, :, ::-1]
 image = Image.fromarray(np.uint8(image))
 
 prompt = "A couple, 4k photo, highly detailed"
 
 gen_images = pipe(
-  prompt=prompt,
-  control_image=image,
-  num_inference_steps=50,
-  joint_attention_kwargs={"scale": 0.9},
-  guidance_scale=25., 
+    prompt=prompt,
+    control_image=image,
+    num_inference_steps=50,
+    joint_attention_kwargs={"scale": 0.9},
+    guidance_scale=25.0,
 ).images[0]
 gen_images.save("output.png")
 ```
@@ -167,12 +167,12 @@ from diffusers import CogView4ControlPipeline, CogView4Transformer2DModel
 from diffusers.utils import load_image
 from PIL import Image
 import numpy as np
-import torch 
+import torch
 
-transformer = CogView4Transformer2DModel.from_pretrained("...") # change this.
-pipe = CogView4ControlPipeline.from_pretrained(
-  "THUDM/CogView4-6B",  transformer=transformer, dtype=torch.bfloat16
-).to("cuda")
+transformer = CogView4Transformer2DModel.from_pretrained("...")  # change this.
+pipe = CogView4ControlPipeline.from_pretrained("THUDM/CogView4-6B", transformer=transformer, dtype=torch.bfloat16).to(
+    "cuda"
+)
 
 open_pose = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
 
@@ -180,16 +180,16 @@ open_pose = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
 url = "https://huggingface.co/Adapter/t2iadapter/resolve/main/people.jpg"
 image = load_image(url)
 image = open_pose(image, detect_resolution=512, image_resolution=1024)
-image = np.array(image)[:, :, ::-1]           
+image = np.array(image)[:, :, ::-1]
 image = Image.fromarray(np.uint8(image))
 
 prompt = "A couple, 4k photo, highly detailed"
 
 gen_images = pipe(
-  prompt=prompt,
-  control_image=image,
-  num_inference_steps=50,
-  guidance_scale=25., 
+    prompt=prompt,
+    control_image=image,
+    num_inference_steps=50,
+    guidance_scale=25.0,
 ).images[0]
 gen_images.save("output.png")
 ```

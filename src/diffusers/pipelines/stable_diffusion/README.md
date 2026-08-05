@@ -72,7 +72,7 @@ image.save("astronaut_rides_horse.png")
 # make sure you're logged in with `hf auth login`
 from diffusers import StableDiffusionPipeline, DDIMScheduler
 
-scheduler =  DDIMScheduler.from_pretrained("CompVis/stable-diffusion-v1-4", subfolder="scheduler")
+scheduler = DDIMScheduler.from_pretrained("CompVis/stable-diffusion-v1-4", subfolder="scheduler")
 
 pipe = StableDiffusionPipeline.from_pretrained(
     "stable-diffusion-v1-5/stable-diffusion-v1-5",

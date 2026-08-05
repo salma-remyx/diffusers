@@ -93,7 +93,9 @@ PIXART-α Controlnet pipeline | Implementation of the controlnet model for pixar
 To load a custom pipeline you just need to pass the `custom_pipeline` argument to `DiffusionPipeline`, as one of the files in `diffusers/examples/community`. Feel free to send a PR with your own pipelines, we will merge them quickly.
 
 ```py
-pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5", custom_pipeline="filename_in_the_community_folder")
+pipe = DiffusionPipeline.from_pretrained(
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", custom_pipeline="filename_in_the_community_folder"
+)
 ```
 
 ## Example usages
@@ -125,21 +127,21 @@ pipe = MochiSTGPipeline.from_pretrained("genmo/mochi-1-preview", variant="bf16",
 # Enable memory savings
 pipe = pipe.to("cuda")
 
-#--------Option--------#
+# --------Option--------#
 prompt = "A close-up of a beautiful woman's face with colored powder exploding around her, creating an abstract splash of vibrant hues, realistic style."
 stg_applied_layers_idx = [34]
-stg_scale = 1.0 # 0.0 for CFG
-#----------------------#
+stg_scale = 1.0  # 0.0 for CFG
+# ----------------------#
 
 # Generate video frames
 frames = pipe(
-    prompt, 
+    prompt,
     height=480,
     width=480,
     num_frames=81,
     stg_applied_layers_idx=stg_applied_layers_idx,
     stg_scale=stg_scale,
-    generator = torch.Generator().manual_seed(42),
+    generator=torch.Generator().manual_seed(42),
     do_rescaling=do_rescaling,
 ).frames[0]
 
@@ -200,83 +202,77 @@ print(AMI_INSTALL_MESSAGE)
 from easydict import EasyDict
 
 
-
-if __name__ == "__main__":    
+if __name__ == "__main__":
     """
     Download Necessary Files
     """
     download_file(
-        url = "https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/model_final_edd263.pkl?download=true",
-        output_file = "model_final_edd263.pkl",
+        url="https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/model_final_edd263.pkl?download=true",
+        output_file="model_final_edd263.pkl",
         exist_ok=True,
     )
     download_file(
-        url = "https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/pointrend_rcnn_R_50_FPN_3x_coco.yaml?download=true",
-        output_file = "pointrend_rcnn_R_50_FPN_3x_coco.yaml",
+        url="https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/pointrend_rcnn_R_50_FPN_3x_coco.yaml?download=true",
+        output_file="pointrend_rcnn_R_50_FPN_3x_coco.yaml",
         exist_ok=True,
     )
     download_file(
-        url = "https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/input_img.png?download=true",
-        output_file = "input_img.png",
+        url="https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/input_img.png?download=true",
+        output_file="input_img.png",
         exist_ok=True,
     )
     download_file(
-        url = "https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/input_mask.png?download=true",
-        output_file = "input_mask.png",
+        url="https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/input_mask.png?download=true",
+        output_file="input_mask.png",
         exist_ok=True,
     )
     download_file(
-        url = "https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/Base-PointRend-RCNN-FPN.yaml?download=true",
-        output_file = "Base-PointRend-RCNN-FPN.yaml",
+        url="https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/Base-PointRend-RCNN-FPN.yaml?download=true",
+        output_file="Base-PointRend-RCNN-FPN.yaml",
         exist_ok=True,
     )
     download_file(
-        url = "https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/Base-RCNN-FPN.yaml?download=true",
-        output_file = "Base-RCNN-FPN.yaml",
+        url="https://huggingface.co/datasets/jellyheadnadrew/adaptive-mask-inpainting-test-images/resolve/main/Base-RCNN-FPN.yaml?download=true",
+        output_file="Base-RCNN-FPN.yaml",
         exist_ok=True,
     )
-    
+
     """ 
     Prepare Adaptive Mask Inpainting Pipeline
     """
     # device
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     num_steps = 50
-    
+
     # Scheduler
     scheduler = DDIMScheduler(
-        beta_start=0.00085, 
-        beta_end=0.012, 
-        beta_schedule="scaled_linear", 
-        clip_sample=False, 
-        set_alpha_to_one=False
+        beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False
     )
     scheduler.set_timesteps(num_inference_steps=num_steps)
 
     ## load models as pipelines
     pipeline = AdaptiveMaskInpaintPipeline.from_pretrained(
-        "Uminosachi/realisticVisionV51_v51VAE-inpainting", 
-        scheduler=scheduler, 
+        "Uminosachi/realisticVisionV51_v51VAE-inpainting",
+        scheduler=scheduler,
         dtype=torch.float16,
-        requires_safety_checker=False
+        requires_safety_checker=False,
     ).to(device)
 
     ## disable safety checker
     enable_safety_checker = False
     if not enable_safety_checker:
         pipeline.safety_checker = None
-    
+
     """ 
     Run Adaptive Mask Inpainting 
     """
     default_mask_image = Image.open("./input_mask.png").convert("L")
     init_image = Image.open("./input_img.png").convert("RGB")
-    
-    
+
     seed = 59
     generator = torch.Generator(device=device)
     generator.manual_seed(seed)
-    
+
     image = pipeline(
         prompt="a man sitting on a couch",
         negative_prompt="worst quality, normal quality, low quality, bad anatomy, artifacts, blurry, cropped, watermark, greyscale, nsfw",
@@ -287,12 +283,11 @@ if __name__ == "__main__":
         use_adaptive_mask=True,
         generator=generator,
         enforce_full_mask_ratio=0.0,
-        visualization_save_dir="./ECCV2024_adaptive_mask_inpainting_demo", # DON'T CHANGE THIS!!!
+        visualization_save_dir="./ECCV2024_adaptive_mask_inpainting_demo",  # DON'T CHANGE THIS!!!
         human_detection_thres=0.015,
     ).images[0]
 
-    
-    image.save(f'final_img.png')
+    image.save(f"final_img.png")
 ```
 #### [Troubleshooting]
 
@@ -317,19 +312,13 @@ negative_prompt = "pink"
 
 # Load the diffusion pipeline
 pipeline = DiffusionPipeline.from_pretrained(
-    model_name,
-    dtype=torch.bfloat16,
-    custom_pipeline="pipeline_flux_with_cfg"
+    model_name, dtype=torch.bfloat16, custom_pipeline="pipeline_flux_with_cfg"
 )
 pipeline.enable_model_cpu_offload()
 
 # Generate the image
 img = pipeline(
-    prompt=prompt,
-    negative_prompt=negative_prompt,
-    true_cfg=1.5,
-    guidance_scale=3.5,
-    generator=torch.manual_seed(0)
+    prompt=prompt, negative_prompt=negative_prompt, true_cfg=1.5, guidance_scale=3.5, generator=torch.manual_seed(0)
 ).images[0]
 
 # Save the generated image
@@ -440,17 +429,20 @@ import torch
 from diffusers import DiffusionPipeline, DDIMScheduler
 from diffusers.utils import load_image, make_image_grid
 
-pipe = DiffusionPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-2-inpainting",
-    custom_pipeline="hd_painter"
-)
+pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-inpainting", custom_pipeline="hd_painter")
 pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
 prompt = "wooden boat"
-init_image = load_image("https://raw.githubusercontent.com/Picsart-AI-Research/HD-Painter/main/__assets__/samples/images/2.jpg")
-mask_image = load_image("https://raw.githubusercontent.com/Picsart-AI-Research/HD-Painter/main/__assets__/samples/masks/2.png")
+init_image = load_image(
+    "https://raw.githubusercontent.com/Picsart-AI-Research/HD-Painter/main/__assets__/samples/images/2.jpg"
+)
+mask_image = load_image(
+    "https://raw.githubusercontent.com/Picsart-AI-Research/HD-Painter/main/__assets__/samples/masks/2.png"
+)
 
-image = pipe(prompt, init_image, mask_image, use_rasg=True, use_painta=True, generator=torch.manual_seed(12345)).images[0]
+image = pipe(
+    prompt, init_image, mask_image, use_rasg=True, use_painta=True, generator=torch.manual_seed(12345)
+).images[0]
 
 make_image_grid([init_image, mask_image, image], rows=1, cols=3)
 ```
@@ -473,7 +465,7 @@ from diffusers.utils import load_image
 # Original DDIM version (higher quality)
 pipe = DiffusionPipeline.from_pretrained(
     "prs-eth/marigold-v1-0",
-    custom_pipeline="marigold_depth_estimation"
+    custom_pipeline="marigold_depth_estimation",
     # dtype=torch.float16,                # (optional) Run with half-precision (16-bit float).
     # variant="fp16",                           # (optional) Use with `dtype=torch.float16`, to directly load fp16 checkpoint
 )
@@ -481,7 +473,7 @@ pipe = DiffusionPipeline.from_pretrained(
 # (New) LCM version (faster speed)
 pipe = DiffusionPipeline.from_pretrained(
     "prs-eth/marigold-depth-lcm-v1-0",
-    custom_pipeline="marigold_depth_estimation"
+    custom_pipeline="marigold_depth_estimation",
     # dtype=torch.float16,                # (optional) Run with half-precision (16-bit float).
     # variant="fp16",                           # (optional) Use with `dtype=torch.float16`, to directly load fp16 checkpoint
 )
@@ -492,17 +484,15 @@ img_path_or_url = "https://share.phys.ethz.ch/~pf/bingkedata/marigold/pipeline_e
 image: Image.Image = load_image(img_path_or_url)
 
 pipeline_output = pipe(
-    image,                    # Input image.
+    image,  # Input image.
     # ----- recommended setting for DDIM version -----
     # denoising_steps=10,     # (optional) Number of denoising steps of each inference pass. Default: 10.
     # ensemble_size=10,       # (optional) Number of inference passes in the ensemble. Default: 10.
     # ------------------------------------------------
-
     # ----- recommended setting for LCM version ------
     # denoising_steps=4,
     # ensemble_size=5,
     # -------------------------------------------------
-
     # processing_res=768,     # (optional) Maximum resolution of processing. If set to 0: will not resize at all. Defaults to 768.
     # match_input_res=True,   # (optional) Resize depth prediction to match input resolution.
     # batch_size=0,           # (optional) Inference batch size, no bigger than `num_ensemble`. If set to 0, the script will automatically decide the proper batch size. Defaults to 0.
@@ -511,8 +501,8 @@ pipeline_output = pipe(
     # show_progress_bar=True, # (optional) If true, will show progress bars of the inference progress.
 )
 
-depth: np.ndarray = pipeline_output.depth_np                    # Predicted depth map
-depth_colored: Image.Image = pipeline_output.depth_colored      # Colorized prediction
+depth: np.ndarray = pipeline_output.depth_np  # Predicted depth map
+depth_colored: Image.Image = pipeline_output.depth_colored  # Colorized prediction
 
 # Save as uint16 PNG
 depth_uint16 = (depth * 65535.0).astype(np.uint16)
@@ -543,7 +533,8 @@ pipe = DiffusionPipeline.from_pretrained(
     "longlian/lmd_plus",
     custom_pipeline="llm_grounded_diffusion",
     custom_revision="main",
-    variant="fp16", dtype=torch.float16
+    variant="fp16",
+    dtype=torch.float16,
 )
 pipe.enable_model_cpu_offload()
 
@@ -563,7 +554,7 @@ images = pipe(
     gligen_scheduled_sampling_beta=0.4,
     output_type="pil",
     num_inference_steps=50,
-    lmd_guidance_kwargs={}
+    lmd_guidance_kwargs={},
 ).images
 
 images[0].save("./lmd_plus_generation.jpg")
@@ -576,9 +567,7 @@ import torch
 from diffusers import DiffusionPipeline
 
 pipe = DiffusionPipeline.from_pretrained(
-    "longlian/lmd_plus",
-    custom_pipeline="llm_grounded_diffusion",
-    variant="fp16", dtype=torch.float16
+    "longlian/lmd_plus", custom_pipeline="llm_grounded_diffusion", variant="fp16", dtype=torch.float16
 )
 pipe.enable_model_cpu_offload()
 
@@ -595,7 +584,7 @@ images = pipe(
     gligen_scheduled_sampling_beta=0.4,
     output_type="pil",
     num_inference_steps=50,
-    lmd_guidance_kwargs={}
+    lmd_guidance_kwargs={},
 ).images
 
 images[0].save("./lmd_plus_generation.jpg")
@@ -677,18 +666,18 @@ import torch
 
 pipe = DiffusionPipeline.from_pretrained(
     "CompVis/stable-diffusion-v1-4",
-    variant='fp16',
+    variant="fp16",
     dtype=torch.float16,
     safety_checker=None,  # Very important for videos...lots of false positives while interpolating
     custom_pipeline="interpolate_stable_diffusion",
-).to('cuda')
+).to("cuda")
 pipe.enable_attention_slicing()
 
 frame_filepaths = pipe.walk(
-    prompts=['a dog', 'a cat', 'a horse'],
+    prompts=["a dog", "a cat", "a horse"],
     seeds=[42, 1337, 1234],
     num_interpolation_steps=16,
-    output_dir='./dreams',
+    output_dir="./dreams",
     batch_size=4,
     height=512,
     width=512,
@@ -718,7 +707,13 @@ def download_image(url):
     response = requests.get(url)
     return PIL.Image.open(BytesIO(response.content)).convert("RGB")
 
-pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5", custom_pipeline="stable_diffusion_mega", dtype=torch.float16, variant="fp16")
+
+pipe = DiffusionPipeline.from_pretrained(
+    "stable-diffusion-v1-5/stable-diffusion-v1-5",
+    custom_pipeline="stable_diffusion_mega",
+    dtype=torch.float16,
+    variant="fp16",
+)
 pipe.to("cuda")
 pipe.enable_attention_slicing()
 
@@ -727,7 +722,9 @@ pipe.enable_attention_slicing()
 images = pipe.text2img("An astronaut riding a horse").images
 
 ### Image-to-Image
-init_image = download_image("https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg")
+init_image = download_image(
+    "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
+)
 
 prompt = "A fantasy landscape, trending on artstation"
 
@@ -771,9 +768,7 @@ from diffusers import DiffusionPipeline
 import torch
 
 pipe = DiffusionPipeline.from_pretrained(
-    'hakurei/waifu-diffusion',
-    custom_pipeline="lpw_stable_diffusion",
-    dtype=torch.float16
+    "hakurei/waifu-diffusion", custom_pipeline="lpw_stable_diffusion", dtype=torch.float16
 )
 pipe = pipe.to("cuda")
 
@@ -790,10 +785,10 @@ from diffusers import DiffusionPipeline
 import torch
 
 pipe = DiffusionPipeline.from_pretrained(
-    'CompVis/stable-diffusion-v1-4',
+    "CompVis/stable-diffusion-v1-4",
     custom_pipeline="lpw_stable_diffusion_onnx",
     revision="onnx",
-    provider="CUDAExecutionProvider"
+    provider="CUDAExecutionProvider",
 )
 
 prompt = "a photo of an astronaut riding a horse on mars, best quality"
@@ -901,11 +896,9 @@ pipe = DiffusionPipeline.from_pretrained(
 prompt = "__animal__ sitting on a __object__ wearing a __clothing__"
 out = pipe(
     prompt,
-    wildcard_option_dict={
-        "clothing":["hat", "shirt", "scarf", "beret"]
-    },
+    wildcard_option_dict={"clothing": ["hat", "shirt", "scarf", "beret"]},
     wildcard_files=["object.txt", "animal.txt"],
-    num_prompt_samples=1
+    num_prompt_samples=1,
 )
 out.images[0].save("image.png")
 torch.cuda.empty_cache()
@@ -925,8 +918,12 @@ from diffusers import DiffusionPipeline
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--prompt", type=str, default="mystical trees | A magical pond | dark",
-                    help="use '|' as the delimiter to compose separate sentences.")
+parser.add_argument(
+    "--prompt",
+    type=str,
+    default="mystical trees | A magical pond | dark",
+    help="use '|' as the delimiter to compose separate sentences.",
+)
 parser.add_argument("--steps", type=int, default=50)
 parser.add_argument("--scale", type=float, default=7.5)
 parser.add_argument("--weights", type=str, default="7.5 | 7.5 | -7.5")
@@ -936,7 +933,7 @@ parser.add_argument("--num_images", type=int, default=1)
 args = parser.parse_args()
 
 has_cuda = th.cuda.is_available()
-device = th.device('cpu' if not has_cuda else 'cuda')
+device = th.device("cpu" if not has_cuda else "cuda")
 
 prompt = args.prompt
 scale = args.scale
@@ -952,11 +949,12 @@ pipe.safety_checker = None
 images = []
 generator = th.Generator("cuda").manual_seed(args.seed)
 for i in range(args.num_images):
-    image = pipe(prompt, guidance_scale=scale, num_inference_steps=steps,
-                 weights=args.weights, generator=generator).images[0]
-    images.append(th.from_numpy(np.array(image)).permute(2, 0, 1) / 255.)
+    image = pipe(
+        prompt, guidance_scale=scale, num_inference_steps=steps, weights=args.weights, generator=generator
+    ).images[0]
+    images.append(th.from_numpy(np.array(image)).permute(2, 0, 1) / 255.0)
 grid = tvu.make_grid(th.stack(images, dim=0), nrow=4, padding=0)
-tvu.save_image(grid, f'{prompt}_{args.weights}' + '.png')
+tvu.save_image(grid, f"{prompt}_{args.weights}" + ".png")
 print("Image saved successfully!")
 ```
 
@@ -973,34 +971,33 @@ import os
 from diffusers import DiffusionPipeline, DDIMScheduler
 
 has_cuda = torch.cuda.is_available()
-device = torch.device('cpu' if not has_cuda else 'cuda')
+device = torch.device("cpu" if not has_cuda else "cuda")
 pipe = DiffusionPipeline.from_pretrained(
     "CompVis/stable-diffusion-v1-4",
     safety_checker=None,
     custom_pipeline="imagic_stable_diffusion",
-    scheduler=DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
+    scheduler=DDIMScheduler(
+        beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False
+    ),
 ).to(device)
 generator = torch.Generator("cuda").manual_seed(0)
 seed = 0
 prompt = "A photo of Barack Obama smiling with a big grin"
-url = 'https://www.dropbox.com/s/6tlwzr73jd1r9yk/obama.png?dl=1'
+url = "https://www.dropbox.com/s/6tlwzr73jd1r9yk/obama.png?dl=1"
 response = requests.get(url)
 init_image = Image.open(BytesIO(response.content)).convert("RGB")
 init_image = init_image.resize((512, 512))
-res = pipe.train(
-    prompt,
-    image=init_image,
-    generator=generator)
+res = pipe.train(prompt, image=init_image, generator=generator)
 res = pipe(alpha=1, guidance_scale=7.5, num_inference_steps=50)
 os.makedirs("imagic", exist_ok=True)
 image = res.images[0]
-image.save('./imagic/imagic_image_alpha_1.png')
+image.save("./imagic/imagic_image_alpha_1.png")
 res = pipe(alpha=1.5, guidance_scale=7.5, num_inference_steps=50)
 image = res.images[0]
-image.save('./imagic/imagic_image_alpha_1_5.png')
+image.save("./imagic/imagic_image_alpha_1_5.png")
 res = pipe(alpha=2, guidance_scale=7.5, num_inference_steps=50)
 image = res.images[0]
-image.save('./imagic/imagic_image_alpha_2.png')
+image.save("./imagic/imagic_image_alpha_2.png")
 ```
 
 ### Seed Resizing
@@ -1014,19 +1011,20 @@ import numpy as np
 from diffusers import DiffusionPipeline
 
 # Ensure the save directory exists or create it
-save_dir = './seed_resize/'
+save_dir = "./seed_resize/"
 os.makedirs(save_dir, exist_ok=True)
 
 has_cuda = th.cuda.is_available()
-device = th.device('cpu' if not has_cuda else 'cuda')
+device = th.device("cpu" if not has_cuda else "cuda")
 
 pipe = DiffusionPipeline.from_pretrained(
-    "CompVis/stable-diffusion-v1-4",
-    custom_pipeline="seed_resize_stable_diffusion"
+    "CompVis/stable-diffusion-v1-4", custom_pipeline="seed_resize_stable_diffusion"
 ).to(device)
+
 
 def dummy(images, **kwargs):
     return images, False
+
 
 pipe.safety_checker = dummy
 
@@ -1040,53 +1038,32 @@ prompt = "A painting of a futuristic cop"
 width = 512
 height = 512
 
-res = pipe(
-    prompt,
-    guidance_scale=7.5,
-    num_inference_steps=50,
-    height=height,
-    width=width,
-    generator=generator)
+res = pipe(prompt, guidance_scale=7.5, num_inference_steps=50, height=height, width=width, generator=generator)
 image = res.images[0]
-image.save(os.path.join(save_dir, 'seed_resize_{w}_{h}_image.png'.format(w=width, h=height)))
+image.save(os.path.join(save_dir, "seed_resize_{w}_{h}_image.png".format(w=width, h=height)))
 
 th.manual_seed(0)
 generator = th.Generator("cuda").manual_seed(0)
 
 pipe = DiffusionPipeline.from_pretrained(
-    "CompVis/stable-diffusion-v1-4",
-    custom_pipeline="seed_resize_stable_diffusion"
+    "CompVis/stable-diffusion-v1-4", custom_pipeline="seed_resize_stable_diffusion"
 ).to(device)
 
 width = 512
 height = 592
 
-res = pipe(
-    prompt,
-    guidance_scale=7.5,
-    num_inference_steps=50,
-    height=height,
-    width=width,
-    generator=generator)
+res = pipe(prompt, guidance_scale=7.5, num_inference_steps=50, height=height, width=width, generator=generator)
 image = res.images[0]
-image.save(os.path.join(save_dir, 'seed_resize_{w}_{h}_image.png'.format(w=width, h=height)))
+image.save(os.path.join(save_dir, "seed_resize_{w}_{h}_image.png".format(w=width, h=height)))
 
 pipe_compare = DiffusionPipeline.from_pretrained(
-    "CompVis/stable-diffusion-v1-4",
-    custom_pipeline="seed_resize_stable_diffusion"
+    "CompVis/stable-diffusion-v1-4", custom_pipeline="seed_resize_stable_diffusion"
 ).to(device)
 
-res = pipe_compare(
-    prompt,
-    guidance_scale=7.5,
-    num_inference_steps=50,
-    height=height,
-    width=width,
-    generator=generator
-)
+res = pipe_compare(prompt, guidance_scale=7.5, num_inference_steps=50, height=height, width=width, generator=generator)
 
 image = res.images[0]
-image.save(os.path.join(save_dir, 'seed_resize_{w}_{h}_image_compare.png'.format(w=width, h=height)))
+image.save(os.path.join(save_dir, "seed_resize_{w}_{h}_image_compare.png".format(w=width, h=height)))
 ```
 
 ### Multilingual Stable Diffusion Pipeline
@@ -1104,26 +1081,29 @@ from transformers import (
     MBart50TokenizerFast,
     MBartForConditionalGeneration,
 )
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 device_dict = {"cuda": 0, "cpu": -1}
 
+
 # helper function taken from: https://huggingface.co/blog/stable_diffusion
 def image_grid(imgs, rows, cols):
-    assert len(imgs) == rows*cols
+    assert len(imgs) == rows * cols
 
     w, h = imgs[0].size
-    grid = Image.new('RGB', size=(cols*w, rows*h))
+    grid = Image.new("RGB", size=(cols * w, rows * h))
     grid_w, grid_h = grid.size
 
     for i, img in enumerate(imgs):
-        grid.paste(img, box=(i%cols*w, i//cols*h))
+        grid.paste(img, box=(i % cols * w, i // cols * h))
     return grid
+
 
 # Add language detection pipeline
 language_detection_model_ckpt = "papluca/xlm-roberta-base-language-detection"
-language_detection_pipeline = pipeline("text-classification",
-                                       model=language_detection_model_ckpt,
-                                       device=device_dict[device])
+language_detection_pipeline = pipeline(
+    "text-classification", model=language_detection_model_ckpt, device=device_dict[device]
+)
 
 # Add model for language translation
 trans_tokenizer = MBart50TokenizerFast.from_pretrained("facebook/mbart-large-50-many-to-one-mmt")
@@ -1141,10 +1121,12 @@ diffuser_pipeline = DiffusionPipeline.from_pretrained(
 diffuser_pipeline.enable_attention_slicing()
 diffuser_pipeline = diffuser_pipeline.to(device)
 
-prompt = ["a photograph of an astronaut riding a horse",
-          "Una casa en la playa",
-          "Ein Hund, der Orange isst",
-          "Un restaurant parisien"]
+prompt = [
+    "a photograph of an astronaut riding a horse",
+    "Una casa en la playa",
+    "Ein Hund, der Orange isst",
+    "Un restaurant parisien",
+]
 
 output = diffuser_pipeline(prompt)
 
@@ -1177,16 +1159,17 @@ CHECKPOINTS = [
     "https://storage.googleapis.com/sfr-gluegen-data-research/checkpoints_all/gluenet_checkpoint/gluenet_Italian_clip_overnorm_over3_noln.ckpt",
     "https://storage.googleapis.com/sfr-gluegen-data-research/checkpoints_all/gluenet_checkpoint/gluenet_Japanese_clip_overnorm_over3_noln.ckpt",
     "https://storage.googleapis.com/sfr-gluegen-data-research/checkpoints_all/gluenet_checkpoint/gluenet_Spanish_clip_overnorm_over3_noln.ckpt",
-    "https://storage.googleapis.com/sfr-gluegen-data-research/checkpoints_all/gluenet_checkpoint/gluenet_sound2img_audioclip_us8k.ckpt"
+    "https://storage.googleapis.com/sfr-gluegen-data-research/checkpoints_all/gluenet_checkpoint/gluenet_sound2img_audioclip_us8k.ckpt",
 ]
 
 LANGUAGE_PROMPTS = {
     "French": "une voiture sur la plage",
-    #"Chinese": "海滩上的一辆车",
-    #"Italian": "una macchina sulla spiaggia",
-    #"Japanese": "浜辺の車",
-    #"Spanish": "un coche en la playa"
+    # "Chinese": "海滩上的一辆车",
+    # "Italian": "una macchina sulla spiaggia",
+    # "Japanese": "浜辺の車",
+    # "Spanish": "un coche en la playa"
 }
+
 
 def download_checkpoints(checkpoint_dir):
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -1200,21 +1183,22 @@ def download_checkpoints(checkpoint_dir):
             print(f"Checkpoint {filename} already exists, skipping download.")
     return checkpoint_dir
 
+
 def load_checkpoint(pipeline, checkpoint_path, device):
     state_dict = torch.load(checkpoint_path, map_location=device)
     state_dict = state_dict.get("state_dict", state_dict)
     missing_keys, unexpected_keys = pipeline.unet.load_state_dict(state_dict, strict=False)
     return pipeline
 
+
 def generate_image(pipeline, prompt, device, output_path):
     with torch.inference_mode():
         image = pipeline(
-            prompt,
-            generator=torch.Generator(device=device).manual_seed(42),
-            num_inference_steps=50
+            prompt, generator=torch.Generator(device=device).manual_seed(42), num_inference_steps=50
         ).images[0]
         image.save(output_path)
         print(f"Image saved to {output_path}")
+
 
 checkpoint_dir = download_checkpoints("./checkpoints_all/gluenet_checkpoint")
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -1236,14 +1220,13 @@ pipeline = DiffusionPipeline.from_pretrained(
     text_encoder=clip_text_encoder,
     tokenizer=clip_tokenizer,
     custom_pipeline="gluegen",
-    safety_checker=None
+    safety_checker=None,
 ).to(device)
 
 os.makedirs("outputs", exist_ok=True)
 
 # Generate images
 for language, prompt in LANGUAGE_PROMPTS.items():
-
     checkpoint_file = f"gluenet_{language}_clip_overnorm_over3_noln.ckpt"
     checkpoint_path = os.path.join(checkpoint_dir, checkpoint_file)
     try:
@@ -1283,6 +1266,7 @@ image_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/dat
 inner_image_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo_mask.png"
 mask_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo_mask.png"
 
+
 def load_image(url, mode="RGB"):
     response = requests.get(url)
     if response.status_code == 200:
@@ -1296,9 +1280,7 @@ inner_image = load_image(inner_image_url, mode="RGBA")
 mask_image = load_image(mask_url, mode="RGB")
 
 pipe = DiffusionPipeline.from_pretrained(
-    "stable-diffusion-v1-5/stable-diffusion-inpainting",
-    custom_pipeline="img2img_inpainting",
-    dtype=torch.float16
+    "stable-diffusion-v1-5/stable-diffusion-inpainting", custom_pipeline="img2img_inpainting", dtype=torch.float16
 )
 pipe = pipe.to("cuda")
 
@@ -1331,7 +1313,7 @@ pipe = DiffusionPipeline.from_pretrained(
     "stable-diffusion-v1-5/stable-diffusion-inpainting",
     custom_pipeline="text_inpainting",
     segmentation_model=model,
-    segmentation_processor=processor
+    segmentation_processor=processor,
 ).to("cuda")
 
 # Load input image
@@ -1356,7 +1338,7 @@ image = image.resize((512, 512))
 
 # Step 4: Run inpainting with Stable Diffusion
 prompt = "a cup"  # The masked-out region will be replaced with this
-result = pipe(image=image, mask=mask, prompt=prompt,text=text).images[0]
+result = pipe(image=image, mask=mask, prompt=prompt, text=text).images[0]
 
 # Save output
 result.save("inpainting_output.png")
@@ -1456,13 +1438,22 @@ pipe = DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", custom
 # The pipeline with the merged checkpoints is returned in all the scenarios
 
 # Compatible checkpoints a.k.a matched model_index.json files. Ignores the meta attributes in model_index.json during comparison.( attrs with _ as prefix )
-merged_pipe = pipe.merge(["CompVis/stable-diffusion-v1-4"," CompVis/stable-diffusion-v1-2"], interp="sigmoid", alpha=0.4)
+merged_pipe = pipe.merge(
+    ["CompVis/stable-diffusion-v1-4", " CompVis/stable-diffusion-v1-2"], interp="sigmoid", alpha=0.4
+)
 
 # Incompatible checkpoints in model_index.json but merge might be possible. Use force=True to ignore model_index.json compatibility
-merged_pipe_1 = pipe.merge(["CompVis/stable-diffusion-v1-4", "hakurei/waifu-diffusion"], force=True, interp="sigmoid", alpha=0.4)
+merged_pipe_1 = pipe.merge(
+    ["CompVis/stable-diffusion-v1-4", "hakurei/waifu-diffusion"], force=True, interp="sigmoid", alpha=0.4
+)
 
 # Three checkpoint merging. Only "add_difference" method actually works on all three checkpoints. Using any other options will ignore the 3rd checkpoint.
-merged_pipe_2 = pipe.merge(["CompVis/stable-diffusion-v1-4", "hakurei/waifu-diffusion", "prompthero/openjourney"], force=True, interp="add_difference", alpha=0.4)
+merged_pipe_2 = pipe.merge(
+    ["CompVis/stable-diffusion-v1-4", "hakurei/waifu-diffusion", "prompthero/openjourney"],
+    force=True,
+    interp="add_difference",
+    alpha=0.4,
+)
 
 prompt = "An astronaut riding a horse on Mars"
 
@@ -1496,28 +1487,30 @@ This Community Pipeline enables the comparison between the 4 checkpoints that ex
 from diffusers import DiffusionPipeline
 import matplotlib.pyplot as plt
 
-pipe = DiffusionPipeline.from_pretrained('CompVis/stable-diffusion-v1-4', custom_pipeline='suvadityamuk/StableDiffusionComparison')
+pipe = DiffusionPipeline.from_pretrained(
+    "CompVis/stable-diffusion-v1-4", custom_pipeline="suvadityamuk/StableDiffusionComparison"
+)
 pipe.enable_attention_slicing()
-pipe = pipe.to('cuda')
+pipe = pipe.to("cuda")
 prompt = "an astronaut riding a horse on mars"
 output = pipe(prompt)
 
-plt.subplots(2,2,1)
+plt.subplots(2, 2, 1)
 plt.imshow(output.images[0])
-plt.title('Stable Diffusion v1.1')
-plt.axis('off')
-plt.subplots(2,2,2)
+plt.title("Stable Diffusion v1.1")
+plt.axis("off")
+plt.subplots(2, 2, 2)
 plt.imshow(output.images[1])
-plt.title('Stable Diffusion v1.2')
-plt.axis('off')
-plt.subplots(2,2,3)
+plt.title("Stable Diffusion v1.2")
+plt.axis("off")
+plt.subplots(2, 2, 3)
 plt.imshow(output.images[2])
-plt.title('Stable Diffusion v1.3')
-plt.axis('off')
-plt.subplots(2,2,4)
+plt.title("Stable Diffusion v1.3")
+plt.axis("off")
+plt.subplots(2, 2, 4)
 plt.imshow(output.images[3])
-plt.title('Stable Diffusion v1.4')
-plt.axis('off')
+plt.title("Stable Diffusion v1.4")
+plt.axis("off")
 
 plt.show()
 ```
@@ -1545,19 +1538,19 @@ pipe = DiffusionPipeline.from_pretrained(
     "CompVis/stable-diffusion-v1-4",
     custom_pipeline="magic_mix",
     scheduler=DDIMScheduler.from_pretrained("CompVis/stable-diffusion-v1-4", subfolder="scheduler"),
-).to('cuda')
+).to("cuda")
 
 url = "https://user-images.githubusercontent.com/59410571/209578593-141467c7-d831-4792-8b9a-b17dc5e47816.jpg"
 response = requests.get(url)
 image = Image.open(BytesIO(response.content)).convert("RGB")  # Convert to RGB to avoid issues
 mix_img = pipe(
     image,
-    prompt='bed',
+    prompt="bed",
     kmin=0.3,
     kmax=0.5,
     mix_factor=0.5,
-    )
-mix_img.save('phone_bed_mix.jpg')
+)
+mix_img.save("phone_bed_mix.jpg")
 ```
 
 The `mix_img` is a PIL image that can be saved locally or displayed directly in a google colab. Generated image is a mix of the layout semantics of the given image and the content semantics of the prompt.
@@ -1670,9 +1663,7 @@ from diffusers import DiffusionPipeline
 device = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
 pipe = DiffusionPipeline.from_pretrained(
-    "kakaobrain/karlo-v1-alpha",
-    dtype=torch.float16,
-    custom_pipeline="unclip_text_interpolation"
+    "kakaobrain/karlo-v1-alpha", dtype=torch.float16, custom_pipeline="unclip_text_interpolation"
 )
 pipe.to(device)
 
@@ -1683,8 +1674,8 @@ generator = torch.Generator(device=device).manual_seed(42)
 
 output = pipe(start_prompt, end_prompt, steps=6, generator=generator, enable_sequential_cpu_offload=False)
 
-for i,image in enumerate(output.images):
-    img.save('result%s.jpg' % i)
+for i, image in enumerate(output.images):
+    img.save("result%s.jpg" % i)
 ```
 
 The resulting images in order:-
@@ -1711,16 +1702,14 @@ device = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 dtype = torch.float16 if torch.cuda.is_available() else torch.bfloat16
 
 pipe = DiffusionPipeline.from_pretrained(
-    "kakaobrain/karlo-v1-alpha-image-variations",
-    dtype=dtype,
-    custom_pipeline="unclip_image_interpolation"
+    "kakaobrain/karlo-v1-alpha-image-variations", dtype=dtype, custom_pipeline="unclip_image_interpolation"
 )
 pipe.to(device)
 
 # List of image URLs
 image_urls = [
-    'https://camo.githubusercontent.com/ef13c8059b12947c0d5e8d3ea88900de6bf1cd76bbf61ace3928e824c491290e/68747470733a2f2f68756767696e67666163652e636f2f64617461736574732f4e616761536169416268696e61792f556e434c4950496d616765496e746572706f6c6174696f6e53616d706c65732f7265736f6c76652f6d61696e2f7374617272795f6e696768742e6a7067',
-    'https://camo.githubusercontent.com/d1947ab7c49ae3f550c28409d5e8b120df48e456559cf4557306c0848337702c/68747470733a2f2f68756767696e67666163652e636f2f64617461736574732f4e616761536169416268696e61792f556e434c4950496d616765496e746572706f6c6174696f6e53616d706c65732f7265736f6c76652f6d61696e2f666c6f776572732e6a7067'
+    "https://camo.githubusercontent.com/ef13c8059b12947c0d5e8d3ea88900de6bf1cd76bbf61ace3928e824c491290e/68747470733a2f2f68756767696e67666163652e636f2f64617461736574732f4e616761536169416268696e61792f556e434c4950496d616765496e746572706f6c6174696f6e53616d706c65732f7265736f6c76652f6d61696e2f7374617272795f6e696768742e6a7067",
+    "https://camo.githubusercontent.com/d1947ab7c49ae3f550c28409d5e8b120df48e456559cf4557306c0848337702c/68747470733a2f2f68756767696e67666163652e636f2f64617461736574732f4e616761536169416268696e61792f556e434c4950496d616765496e746572706f6c6174696f6e53616d706c65732f7265736f6c76652f6d61696e2f666c6f776572732e6a7067",
 ]
 
 # Open images from URLs
@@ -1736,7 +1725,7 @@ generator = torch.Generator(device=device).manual_seed(42)
 output = pipe(image=images, steps=6, generator=generator)
 
 for i, image in enumerate(output.images):
-    image.save('starry_to_flowers_%s.jpg' % i)
+    image.save("starry_to_flowers_%s.jpg" % i)
 ```
 
 The original images:-
@@ -1784,13 +1773,9 @@ pipe = DiffusionPipeline.from_pretrained(
 pipe = pipe.to(device)
 
 for strength in np.linspace(0.1, 1, 25):
-    denoised_image, latent_timestep = pipe(
-        image_pil, strength=strength, return_dict=False
-    )
+    denoised_image, latent_timestep = pipe(image_pil, strength=strength, return_dict=False)
     denoised_image = denoised_image[0]
-    denoised_image.save(
-        f"noise_comparative_analysis_{image_name}_{latent_timestep}.png"
-    )
+    denoised_image.save(f"noise_comparative_analysis_{image_name}_{latent_timestep}.png")
 ```
 
 Here is the result of this pipeline (which is DDIM) on CelebA-HQ dataset.
@@ -1813,12 +1798,8 @@ from PIL import Image
 from transformers import CLIPImageProcessor, CLIPModel
 
 # Load CLIP model and feature extractor
-feature_extractor = CLIPImageProcessor.from_pretrained(
-    "laion/CLIP-ViT-B-32-laion2B-s34B-b79K"
-)
-clip_model = CLIPModel.from_pretrained(
-    "laion/CLIP-ViT-B-32-laion2B-s34B-b79K", dtype=torch.float16
-)
+feature_extractor = CLIPImageProcessor.from_pretrained("laion/CLIP-ViT-B-32-laion2B-s34B-b79K")
+clip_model = CLIPModel.from_pretrained("laion/CLIP-ViT-B-32-laion2B-s34B-b79K", dtype=torch.float16)
 
 # Load guided pipeline
 guided_pipeline = DiffusionPipeline.from_pretrained(
@@ -1841,7 +1822,7 @@ edit_image = Image.open(BytesIO(response.content)).convert("RGB")
 image = guided_pipeline(
     prompt=prompt,
     height=512,  # Height of the output image
-    width=512,   # Width of the output image
+    width=512,  # Width of the output image
     image=edit_image,  # Input image to guide the diffusion
     strength=0.75,  # How much to transform the input image
     num_inference_steps=30,  # Number of diffusion steps
@@ -1856,7 +1837,6 @@ image = guided_pipeline(
 
 # Display the generated image
 image.show()
-
 ```
 
 Init Image
@@ -1881,20 +1861,25 @@ from diffusers.pipelines import DiffusionPipeline
 # Use the DDIMScheduler scheduler here instead
 scheduler = DDIMScheduler.from_pretrained("stabilityai/stable-diffusion-2-1", subfolder="scheduler")
 
-pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1",
+pipe = DiffusionPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-2-1",
     custom_pipeline="stable_diffusion_tensorrt_txt2img",
-    variant='fp16',
+    variant="fp16",
     dtype=torch.float16,
-    scheduler=scheduler,)
+    scheduler=scheduler,
+)
 
 # re-use cached folder to save ONNX models and TensorRT Engines
-pipe.set_cached_folder("stabilityai/stable-diffusion-2-1", variant='fp16',)
+pipe.set_cached_folder(
+    "stabilityai/stable-diffusion-2-1",
+    variant="fp16",
+)
 
 pipe = pipe.to("cuda")
 
 prompt = "a beautiful photograph of Mt. Fuji during cherry blossom"
 image = pipe(prompt).images[0]
-image.save('tensorrt_mt_fuji.png')
+image.save("tensorrt_mt_fuji.png")
 ```
 
 ### EDICT Image Editing Pipeline
@@ -1912,6 +1897,7 @@ import torch, PIL, requests
 from io import BytesIO
 from IPython.display import display
 
+
 def center_crop_and_resize(im):
 
     width, height = im.size
@@ -1923,17 +1909,18 @@ def center_crop_and_resize(im):
 
     return im.crop((left, upper, right, lower)).resize((512, 512))
 
+
 dtype = torch.float16
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # scheduler and text_encoder param values as in the paper
 scheduler = DDIMScheduler(
-        num_train_timesteps=1000,
-        beta_start=0.00085,
-        beta_end=0.012,
-        beta_schedule="scaled_linear",
-        set_alpha_to_one=False,
-        clip_sample=False,
+    num_train_timesteps=1000,
+    beta_start=0.00085,
+    beta_end=0.012,
+    beta_schedule="scaled_linear",
+    set_alpha_to_one=False,
+    clip_sample=False,
 )
 
 text_encoder = CLIPTextModel.from_pretrained(
@@ -1966,9 +1953,9 @@ target_prompt = "A golden retriever"
 
 # run the pipeline
 result_image = pipeline(
-      base_prompt=base_prompt,
-      target_prompt=target_prompt,
-      image=cropped_image,
+    base_prompt=base_prompt,
+    target_prompt=target_prompt,
+    image=cropped_image,
 )
 
 display(result_image)
@@ -2000,16 +1987,21 @@ import torch
 from io import BytesIO
 from diffusers import StableDiffusionPipeline, RePaintScheduler
 
+
 def download_image(url):
     response = requests.get(url)
     return PIL.Image.open(BytesIO(response.content)).convert("RGB")
+
+
 img_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo.png"
 mask_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo_mask.png"
 init_image = download_image(img_url).resize((512, 512))
 mask_image = download_image(mask_url).resize((512, 512))
 mask_image = PIL.ImageOps.invert(mask_image)
 pipe = StableDiffusionPipeline.from_pretrained(
-    "CompVis/stable-diffusion-v1-4", dtype=torch.float16, custom_pipeline="stable_diffusion_repaint",
+    "CompVis/stable-diffusion-v1-4",
+    dtype=torch.float16,
+    custom_pipeline="stable_diffusion_repaint",
 )
 pipe.scheduler = RePaintScheduler.from_config(pipe.scheduler.config)
 pipe = pipe.to("cuda")
@@ -2032,17 +2024,21 @@ from diffusers import DDIMScheduler
 from diffusers import DiffusionPipeline
 
 # Use the DDIMScheduler scheduler here instead
-scheduler = DDIMScheduler.from_pretrained("stabilityai/stable-diffusion-2-1",
-                                            subfolder="scheduler")
+scheduler = DDIMScheduler.from_pretrained("stabilityai/stable-diffusion-2-1", subfolder="scheduler")
 
-pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1",
-                                            custom_pipeline="stable_diffusion_tensorrt_img2img",
-                                            variant='fp16',
-                                            dtype=torch.float16,
-                                            scheduler=scheduler,)
+pipe = DiffusionPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-2-1",
+    custom_pipeline="stable_diffusion_tensorrt_img2img",
+    variant="fp16",
+    dtype=torch.float16,
+    scheduler=scheduler,
+)
 
 # re-use cached folder to save ONNX models and TensorRT Engines
-pipe.set_cached_folder("stabilityai/stable-diffusion-2-1", variant='fp16',)
+pipe.set_cached_folder(
+    "stabilityai/stable-diffusion-2-1",
+    variant="fp16",
+)
 
 pipe = pipe.to("cuda")
 
@@ -2050,8 +2046,12 @@ url = "https://pajoca.com/wp-content/uploads/2022/09/tekito-yamakawa-1.png"
 response = requests.get(url)
 input_image = Image.open(BytesIO(response.content)).convert("RGB")
 prompt = "photorealistic new zealand hills"
-image = pipe(prompt, image=input_image, strength=0.75,).images[0]
-image.save('tensorrt_img2img_new_zealand_hills.png')
+image = pipe(
+    prompt,
+    image=input_image,
+    strength=0.75,
+).images[0]
+image.save("tensorrt_img2img_new_zealand_hills.png")
 ```
 
 ### Stable Diffusion BoxDiff
@@ -2062,6 +2062,7 @@ from PIL import Image, ImageDraw
 from copy import deepcopy
 
 from examples.community.pipeline_stable_diffusion_boxdiff import StableDiffusionBoxDiffPipeline
+
 
 def draw_box_with_text(img, boxes, names):
     colors = ["red", "olive", "blue", "green", "orange", "brown", "cyan", "purple"]
@@ -2074,6 +2075,7 @@ def draw_box_with_text(img, boxes, names):
         draw.text((box[0] * W, box[1] * H), names[bid], fill=colors[bid % len(colors)])
     return img_new
 
+
 pipe = StableDiffusionBoxDiffPipeline.from_pretrained(
     "stabilityai/stable-diffusion-2-1-base",
     dtype=torch.float16,
@@ -2082,14 +2084,8 @@ pipe.to("cuda")
 
 # example 1
 prompt = "as the aurora lights up the sky, a herd of reindeer leisurely wanders on the grassy meadow, admiring the breathtaking view, a serene lake quietly reflects the magnificent display, and in the distance, a snow-capped mountain stands majestically, fantasy, 8k, highly detailed"
-phrases = [
-    "aurora",
-    "reindeer",
-    "meadow",
-    "lake",
-    "mountain"
-]
-boxes = [[1,3,512,202], [75,344,421,495], [1,327,508,507], [2,217,507,341], [1,135,509,242]]
+phrases = ["aurora", "reindeer", "meadow", "lake", "mountain"]
+boxes = [[1, 3, 512, 202], [75, 344, 421, 495], [1, 327, 508, 507], [2, 217, 507, 341], [1, 135, 509, 242]]
 
 # example 2
 # prompt = "A rabbit wearing sunglasses looks very proud"
@@ -2102,14 +2098,11 @@ images = pipe(
     prompt,
     boxdiff_phrases=phrases,
     boxdiff_boxes=boxes,
-    boxdiff_kwargs={
-        "attention_res": 16,
-        "normalize_eot": True
-    },
+    boxdiff_kwargs={"attention_res": 16, "normalize_eot": True},
     num_inference_steps=50,
     guidance_scale=7.5,
     generator=torch.manual_seed(42),
-    safety_checker=None
+    safety_checker=None,
 ).images
 
 draw_box_with_text(images[0], boxes, phrases).save("output.png")
@@ -2129,21 +2122,19 @@ import torch
 from diffusers import UniPCMultistepScheduler
 from diffusers.utils import load_image
 
-input_image = load_image("https://hf.co/datasets/huggingface/documentation-images/resolve/main/diffusers/input_image_vermeer.png")
+input_image = load_image(
+    "https://hf.co/datasets/huggingface/documentation-images/resolve/main/diffusers/input_image_vermeer.png"
+)
 
 pipe = StableDiffusionReferencePipeline.from_pretrained(
-       "stable-diffusion-v1-5/stable-diffusion-v1-5",
-       safety_checker=None,
-       dtype=torch.float16
-       ).to('cuda:0')
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", safety_checker=None, dtype=torch.float16
+).to("cuda:0")
 
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
 
-result_img = pipe(ref_image=input_image,
-      prompt="1girl",
-      num_inference_steps=20,
-      reference_attn=True,
-      reference_adain=True).images[0]
+result_img = pipe(
+    ref_image=input_image, prompt="1girl", num_inference_steps=20, reference_attn=True, reference_adain=True
+).images[0]
 ```
 
 Reference Image
@@ -2179,7 +2170,9 @@ from PIL import Image
 from diffusers import UniPCMultistepScheduler
 from diffusers.utils import load_image
 
-input_image = load_image("https://hf.co/datasets/huggingface/documentation-images/resolve/main/diffusers/input_image_vermeer.png")
+input_image = load_image(
+    "https://hf.co/datasets/huggingface/documentation-images/resolve/main/diffusers/input_image_vermeer.png"
+)
 
 # get canny image
 image = cv2.Canny(np.array(input_image), 100, 200)
@@ -2189,20 +2182,19 @@ canny_image = Image.fromarray(image)
 
 controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny", dtype=torch.float16)
 pipe = StableDiffusionControlNetReferencePipeline.from_pretrained(
-       "stable-diffusion-v1-5/stable-diffusion-v1-5",
-       controlnet=controlnet,
-       safety_checker=None,
-       dtype=torch.float16
-       ).to('cuda:0')
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", controlnet=controlnet, safety_checker=None, dtype=torch.float16
+).to("cuda:0")
 
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
 
-result_img = pipe(ref_image=input_image,
-      prompt="1girl",
-      image=canny_image,
-      num_inference_steps=20,
-      reference_attn=True,
-      reference_adain=True).images[0]
+result_img = pipe(
+    ref_image=input_image,
+    prompt="1girl",
+    image=canny_image,
+    num_inference_steps=20,
+    reference_attn=True,
+    reference_adain=True,
+).images[0]
 ```
 
 Reference Image
@@ -2245,21 +2237,31 @@ python -m pip install intel_extension_for_pytorch==<version_name> -f https://dev
 **Note:** The setting of generated image height/width for `prepare_for_ipex()` should be same as the setting of pipeline inference.
 
 ```python
-pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5", custom_pipeline="stable_diffusion_ipex")
+pipe = DiffusionPipeline.from_pretrained(
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", custom_pipeline="stable_diffusion_ipex"
+)
 # For Float32
-pipe.prepare_for_ipex(prompt, dtype=torch.float32, height=512, width=512) # value of image height/width should be consistent with the pipeline inference
+pipe.prepare_for_ipex(
+    prompt, dtype=torch.float32, height=512, width=512
+)  # value of image height/width should be consistent with the pipeline inference
 # For BFloat16
-pipe.prepare_for_ipex(prompt, dtype=torch.bfloat16, height=512, width=512) # value of image height/width should be consistent with the pipeline inference
+pipe.prepare_for_ipex(
+    prompt, dtype=torch.bfloat16, height=512, width=512
+)  # value of image height/width should be consistent with the pipeline inference
 ```
 
 Then you can use the ipex pipeline in a similar way to the default stable diffusion pipeline.
 
 ```python
 # For Float32
-image = pipe(prompt, num_inference_steps=20, height=512, width=512).images[0] # value of image height/width should be consistent with 'prepare_for_ipex()'
+image = pipe(prompt, num_inference_steps=20, height=512, width=512).images[
+    0
+]  # value of image height/width should be consistent with 'prepare_for_ipex()'
 # For BFloat16
 with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
-    image = pipe(prompt, num_inference_steps=20, height=512, width=512).images[0] # value of image height/width should be consistent with 'prepare_for_ipex()'
+    image = pipe(prompt, num_inference_steps=20, height=512, width=512).images[
+        0
+    ]  # value of image height/width should be consistent with 'prepare_for_ipex()'
 ```
 
 The following code compares the performance of the original stable diffusion pipeline with the ipex-optimized pipeline.
@@ -2272,6 +2274,8 @@ import time
 
 prompt = "sailing ship in storm by Rembrandt"
 model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
+
+
 # Helper function for time evaluation
 def elapsed_time(pipeline, nb_pass=3, num_inference_steps=20):
     # warmup
@@ -2283,6 +2287,7 @@ def elapsed_time(pipeline, nb_pass=3, num_inference_steps=20):
         pipeline(prompt, num_inference_steps=num_inference_steps, height=512, width=512)
     end = time.time()
     return (end - start) / nb_pass
+
 
 ##############     bf16 inference performance    ###############
 
@@ -2348,7 +2353,9 @@ python -m pip install intel_extension_for_pytorch==<version_name> -f https://dev
 **Note:** The values of `height` and `width` used during preparation with `prepare_for_ipex()` should be the same when running inference with the prepared pipeline.
 
 ```python
-pipe = StableDiffusionXLPipelineIpex.from_pretrained("stabilityai/sdxl-turbo", low_cpu_mem_usage=True, use_safetensors=True)
+pipe = StableDiffusionXLPipelineIpex.from_pretrained(
+    "stabilityai/sdxl-turbo", low_cpu_mem_usage=True, use_safetensors=True
+)
 # value of image height/width should be consistent with the pipeline inference
 # For Float32
 pipe.prepare_for_ipex(torch.float32, prompt, height=512, width=512)
@@ -2361,10 +2368,14 @@ Then you can use the ipex pipeline in a similar way to the default stable diffus
 ```python
 # value of image height/width should be consistent with 'prepare_for_ipex()'
 # For Float32
-image = pipe(prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=guidance_scale).images[0]
+image = pipe(
+    prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=guidance_scale
+).images[0]
 # For BFloat16
 with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
-    image = pipe(prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=guidance_scale).images[0]
+    image = pipe(
+        prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=guidance_scale
+    ).images[0]
 ```
 
 The following code compares the performance of the original stable diffusion xl pipeline with the ipex-optimized pipeline.
@@ -2381,17 +2392,21 @@ prompt = "sailing ship in storm by Rembrandt"
 model_id = "stabilityai/sdxl-turbo"
 steps = 4
 
+
 # Helper function for time evaluation
 def elapsed_time(pipeline, nb_pass=3, num_inference_steps=1):
     # warmup
     for _ in range(2):
-        images = pipeline(prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=0.0).images
+        images = pipeline(
+            prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=0.0
+        ).images
     # time evaluation
     start = time.time()
     for _ in range(nb_pass):
         pipeline(prompt, num_inference_steps=num_inference_steps, height=512, width=512, guidance_scale=0.0)
     end = time.time()
     return (end - start) / nb_pass
+
 
 ##############     bf16 inference performance    ###############
 
@@ -2450,20 +2465,17 @@ def download_image(url):
     response = requests.get(url)
     return PIL.Image.open(BytesIO(response.content)).convert("RGB")
 
+
 # Loading additional models
-feature_extractor = CLIPImageProcessor.from_pretrained(
-    "laion/CLIP-ViT-B-32-laion2B-s34B-b79K"
-)
-clip_model = CLIPModel.from_pretrained(
-    "laion/CLIP-ViT-B-32-laion2B-s34B-b79K", dtype=torch.float16
-)
-coca_model = open_clip.create_model('coca_ViT-L-14', pretrained='laion2B-s13B-b90k').to('cuda')
+feature_extractor = CLIPImageProcessor.from_pretrained("laion/CLIP-ViT-B-32-laion2B-s34B-b79K")
+clip_model = CLIPModel.from_pretrained("laion/CLIP-ViT-B-32-laion2B-s34B-b79K", dtype=torch.float16)
+coca_model = open_clip.create_model("coca_ViT-L-14", pretrained="laion2B-s13B-b90k").to("cuda")
 coca_model.dtype = torch.float16
 coca_transform = open_clip.image_transform(
     coca_model.visual.image_size,
     is_train=False,
-    mean=getattr(coca_model.visual, 'image_mean', None),
-    std=getattr(coca_model.visual, 'image_std', None),
+    mean=getattr(coca_model.visual, "image_mean", None),
+    std=getattr(coca_model.visual, "image_std", None),
 )
 coca_tokenizer = SimpleTokenizer()
 
@@ -2484,9 +2496,11 @@ mixing_pipeline = mixing_pipeline.to("cuda")
 # Pipeline running
 generator = torch.Generator(device="cuda").manual_seed(17)
 
+
 def download_image(url):
     response = requests.get(url)
     return PIL.Image.open(BytesIO(response.content)).convert("RGB")
+
 
 content_image = download_image("https://huggingface.co/datasets/TheDenk/images_mixing/resolve/main/boromir.jpg")
 style_image = download_image("https://huggingface.co/datasets/TheDenk/images_mixing/resolve/main/gigachad.jpg")
@@ -2524,11 +2538,11 @@ from diffusers.utils import load_image
 import torch
 
 pipe = DiffusionPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-xl-base-1.0"
-    , dtype       = torch.float16
-    , use_safetensors   = True
-    , variant           = "fp16"
-    , custom_pipeline   = "lpw_stable_diffusion_xl",
+    "stabilityai/stable-diffusion-xl-base-1.0",
+    dtype=torch.float16,
+    use_safetensors=True,
+    variant="fp16",
+    custom_pipeline="lpw_stable_diffusion_xl",
 )
 
 prompt = "photo of a cute (white) cat running on the grass" * 20
@@ -2547,26 +2561,27 @@ t2i_images = pipe(
 # img2img
 input_image = load_image("/path/to/local/image.png")  # or URL to your input image
 i2i_images = pipe.img2img(
-  prompt=prompt,
-  negative_prompt=neg_prompt,
-  image=input_image,
-  strength=0.8,  # higher strength will result in more variation compared to original image
+    prompt=prompt,
+    negative_prompt=neg_prompt,
+    image=input_image,
+    strength=0.8,  # higher strength will result in more variation compared to original image
 ).images
 
 # inpaint
 input_mask = load_image("/path/to/local/mask.png")  # or URL to your input inpainting mask
 inpaint_images = pipe.inpaint(
-  prompt="photo of a cute (black) cat running on the grass" * 20,
-  negative_prompt=neg_prompt,
-  image=input_image,
-  mask=input_mask,
-  strength=0.6,  # higher strength will result in more variation compared to original image
+    prompt="photo of a cute (black) cat running on the grass" * 20,
+    negative_prompt=neg_prompt,
+    image=input_image,
+    mask=input_mask,
+    strength=0.6,  # higher strength will result in more variation compared to original image
 ).images
 
 pipe.to("cpu")
 torch.cuda.empty_cache()
 
 from IPython.display import display  # assuming you are using this code in a notebook
+
 display(t2i_images[0])
 display(i2i_images[0])
 display(inpaint_images[0])
@@ -2585,17 +2600,23 @@ This pipeline uses the Mixture. Refer to the [Mixture](https://huggingface.co/pa
 from diffusers import LMSDiscreteScheduler, DiffusionPipeline
 
 # Create scheduler and model (similar to StableDiffusionPipeline)
-scheduler = LMSDiscreteScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000)
-pipeline = DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", scheduler=scheduler, custom_pipeline="mixture_tiling")
+scheduler = LMSDiscreteScheduler(
+    beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000
+)
+pipeline = DiffusionPipeline.from_pretrained(
+    "CompVis/stable-diffusion-v1-4", scheduler=scheduler, custom_pipeline="mixture_tiling"
+)
 pipeline.to("cuda")
 
 # Mixture of Diffusers generation
 image = pipeline(
-    prompt=[[
-        "A charming house in the countryside, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
-        "A dirt road in the countryside crossing pastures, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
-        "An old and rusty giant robot lying on a dirt road, by jakub rozalski, dark sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece"
-    ]],
+    prompt=[
+        [
+            "A charming house in the countryside, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
+            "A dirt road in the countryside crossing pastures, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
+            "An old and rusty giant robot lying on a dirt road, by jakub rozalski, dark sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
+        ]
+    ],
     tile_height=640,
     tile_width=640,
     tile_row_overlap=0,
@@ -2622,8 +2643,12 @@ from diffusers.pipelines.pipeline_utils import Image2ImageRegion, Text2ImageRegi
 iic_image = preprocess_image(Image.open("input_image.png").convert("RGB"))
 
 # Create scheduler and model (similar to StableDiffusionPipeline)
-scheduler = LMSDiscreteScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000)
-pipeline = DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", scheduler=scheduler).to("cuda:0", custom_pipeline="mixture_canvas")
+scheduler = LMSDiscreteScheduler(
+    beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000
+)
+pipeline = DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", scheduler=scheduler).to(
+    "cuda:0", custom_pipeline="mixture_canvas"
+)
 pipeline.to("cuda")
 
 # Mixture of Diffusers generation
@@ -2631,9 +2656,15 @@ output = pipeline(
     canvas_height=800,
     canvas_width=352,
     regions=[
-        Text2ImageRegion(0, 800, 0, 352, guidance_scale=8,
-            prompt=f"best quality, masterpiece, WLOP, sakimichan, art contest winner on pixiv, 8K, intricate details, wet effects, rain drops, ethereal, mysterious, futuristic, UHD, HDR, cinematic lighting, in a beautiful forest, rainy day, award winning, trending on artstation, beautiful confident cheerful young woman, wearing a futuristic sleeveless dress, ultra beautiful detailed  eyes, hyper-detailed face, complex,  perfect, model,  textured,  chiaroscuro, professional make-up, realistic, figure in frame, "),
-        Image2ImageRegion(352-800, 352, 0, 352, reference_image=iic_image, strength=1.0),
+        Text2ImageRegion(
+            0,
+            800,
+            0,
+            352,
+            guidance_scale=8,
+            prompt=f"best quality, masterpiece, WLOP, sakimichan, art contest winner on pixiv, 8K, intricate details, wet effects, rain drops, ethereal, mysterious, futuristic, UHD, HDR, cinematic lighting, in a beautiful forest, rainy day, award winning, trending on artstation, beautiful confident cheerful young woman, wearing a futuristic sleeveless dress, ultra beautiful detailed  eyes, hyper-detailed face, complex,  perfect, model,  textured,  chiaroscuro, professional make-up, realistic, figure in frame, ",
+        ),
+        Image2ImageRegion(352 - 800, 352, 0, 352, reference_image=iic_image, strength=1.0),
     ],
     num_inference_steps=100,
     seed=5525475061,
@@ -2651,23 +2682,23 @@ This pipeline uses the Mixture. Refer to the [Mixture](https://huggingface.co/pa
 import torch
 from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler, AutoencoderKL
 
-device="cuda"
+device = "cuda"
 
 # Load fixed vae (optional)
-vae = AutoencoderKL.from_pretrained(
-    "madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16
-).to(device)
+vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16).to(device)
 
 # Create scheduler and model (similar to StableDiffusionPipeline)
-model_id="stablediffusionapi/yamermix-v8-vae"
-scheduler = DPMSolverMultistepScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000)
+model_id = "stablediffusionapi/yamermix-v8-vae"
+scheduler = DPMSolverMultistepScheduler(
+    beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000
+)
 pipe = DiffusionPipeline.from_pretrained(
     model_id,
     dtype=torch.float16,
     vae=vae,
     custom_pipeline="mixture_tiling_sdxl",
     scheduler=scheduler,
-    use_safetensors=False    
+    use_safetensors=False,
 ).to(device)
 
 pipe.enable_model_cpu_offload()
@@ -2678,18 +2709,20 @@ generator = torch.Generator(device).manual_seed(297984183)
 
 # Mixture of Diffusers generation
 image = pipe(
-    prompt=[[
-        "A charming house in the countryside, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
-        "A dirt road in the countryside crossing pastures, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",        
-        "An old and rusty giant robot lying on a dirt road, by jakub rozalski, dark sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece"
-    ]],
+    prompt=[
+        [
+            "A charming house in the countryside, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
+            "A dirt road in the countryside crossing pastures, by jakub rozalski, sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
+            "An old and rusty giant robot lying on a dirt road, by jakub rozalski, dark sunset lighting, elegant, highly detailed, smooth, sharp focus, artstation, stunning masterpiece",
+        ]
+    ],
     tile_height=1024,
     tile_width=1280,
     tile_row_overlap=0,
     tile_col_overlap=256,
-    guidance_scale_tiles=[[7, 7, 7]], # or guidance_scale=7 if is the same for all prompts
+    guidance_scale_tiles=[[7, 7, 7]],  # or guidance_scale=7 if is the same for all prompts
     height=1024,
-    width=3840,    
+    width=3840,
     generator=generator,
     num_inference_steps=30,
 )["images"][0]
@@ -2705,7 +2738,13 @@ This works better with 4x scales, but you can try adjusts parameters to higher s
 
 ````python
 import torch
-from diffusers import DiffusionPipeline, ControlNetUnionModel, AutoencoderKL, UniPCMultistepScheduler, UNet2DConditionModel
+from diffusers import (
+    DiffusionPipeline,
+    ControlNetUnionModel,
+    AutoencoderKL,
+    UniPCMultistepScheduler,
+    UNet2DConditionModel,
+)
 from diffusers.utils import load_image
 from PIL import Image
 
@@ -2723,16 +2762,16 @@ pipe = DiffusionPipeline.from_pretrained(
     dtype=torch.float16,
     vae=vae,
     controlnet=controlnet,
-    custom_pipeline="mod_controlnet_tile_sr_sdxl",    
+    custom_pipeline="mod_controlnet_tile_sr_sdxl",
     use_safetensors=True,
     variant="fp16",
 ).to(device)
 
 unet = UNet2DConditionModel.from_pretrained(model_id, subfolder="unet", variant="fp16", use_safetensors=True)
 
-#pipe.enable_model_cpu_offload()  # << Enable this if you have limited VRAM
-pipe.enable_vae_tiling() # << Enable this if you have limited VRAM
-pipe.enable_vae_slicing() # << Enable this if you have limited VRAM
+# pipe.enable_model_cpu_offload()  # << Enable this if you have limited VRAM
+pipe.enable_vae_tiling()  # << Enable this if you have limited VRAM
+pipe.enable_vae_slicing()  # << Enable this if you have limited VRAM
 
 # Set selected scheduler
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
@@ -2746,7 +2785,7 @@ print(f"Current resolution: H:{original_height} x W:{original_width}")
 # Pre-upscale image for tiling
 resolution = 4096
 tile_gaussian_sigma = 0.3
-max_tile_size = 1024 # or 1280
+max_tile_size = 1024  # or 1280
 
 current_size = max(control_image.size)
 scale_factor = max(2, resolution / current_size)
@@ -2784,7 +2823,7 @@ generated_image = pipe(
     width=target_width,
     original_size=(original_width, original_height),
     target_size=(target_width, target_height),
-    guidance_scale=guidance_scale,        
+    guidance_scale=guidance_scale,
     strength=float(denoising_strenght),
     tile_weighting_method=tile_weighting_method,
     max_tile_size=max_tile_size,
@@ -2811,15 +2850,19 @@ from diffusers.pipelines import DiffusionPipeline
 # Use the PNDMScheduler scheduler here instead
 scheduler = PNDMScheduler.from_pretrained("stabilityai/stable-diffusion-2-inpainting", subfolder="scheduler")
 
-pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-inpainting",
+pipe = DiffusionPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-2-inpainting",
     custom_pipeline="stable_diffusion_tensorrt_inpaint",
-    variant='fp16',
+    variant="fp16",
     dtype=torch.float16,
     scheduler=scheduler,
-    )
+)
 
 # re-use cached folder to save ONNX models and TensorRT Engines
-pipe.set_cached_folder("stabilityai/stable-diffusion-2-inpainting", variant='fp16',)
+pipe.set_cached_folder(
+    "stabilityai/stable-diffusion-2-inpainting",
+    variant="fp16",
+)
 
 pipe = pipe.to("cuda")
 
@@ -2832,8 +2875,13 @@ response = requests.get(mask_url)
 mask_image = Image.open(BytesIO(response.content)).convert("RGB")
 
 prompt = "a mecha robot sitting on a bench"
-image = pipe(prompt, image=input_image, mask_image=mask_image, strength=0.75,).images[0]
-image.save('tensorrt_inpaint_mecha_robot.png')
+image = pipe(
+    prompt,
+    image=input_image,
+    mask_image=mask_image,
+    strength=0.75,
+).images[0]
+image.save("tensorrt_inpaint_mecha_robot.png")
 ```
 
 ### IADB pipeline
@@ -2844,9 +2892,9 @@ It is a simple and minimalist diffusion model.
 The following code shows how to use the IADB pipeline to generate images using a pretrained celebahq-256 model.
 
 ```python
-pipeline_iadb = DiffusionPipeline.from_pretrained("thomasc4/iadb-celebahq-256", custom_pipeline='iadb')
+pipeline_iadb = DiffusionPipeline.from_pretrained("thomasc4/iadb-celebahq-256", custom_pipeline="iadb")
 
-pipeline_iadb = pipeline_iadb.to('cuda')
+pipeline_iadb = pipeline_iadb.to("cuda")
 
 output = pipeline_iadb(batch_size=4, num_inference_steps=128)
 for i in range(len(output[0])):
@@ -2860,11 +2908,11 @@ Sampling with the IADB formulation is easy, and can be done in a few lines (the 
 def sample_iadb(model, x0, nb_step):
     x_alpha = x0
     for t in range(nb_step):
-        alpha = (t/nb_step)
-        alpha_next =((t+1)/nb_step)
+        alpha = t / nb_step
+        alpha_next = (t + 1) / nb_step
 
-        d = model(x_alpha, torch.tensor(alpha, device=x_alpha.device))['sample']
-        x_alpha = x_alpha + (alpha_next-alpha)*d
+        d = model(x_alpha, torch.tensor(alpha, device=x_alpha.device))["sample"]
+        x_alpha = x_alpha + (alpha_next - alpha) * d
 
     return x_alpha
 ```
@@ -2880,10 +2928,10 @@ while True:
     alpha = torch.rand(batch_size)
 
     # Blend
-    x_alpha = (1-alpha) * x0 + alpha * x1
+    x_alpha = (1 - alpha) * x0 + alpha * x1
 
     # Loss
-    loss = torch.sum((D(x_alpha, alpha)- (x1-x0))**2)
+    loss = torch.sum((D(x_alpha, alpha) - (x1 - x0)) ** 2)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -2923,9 +2971,15 @@ query_pose3 = [-55.0, 90.0, 0.0]
 # H, W = (256, 256) # H, W = (512, 512)   # zero123 training is 256,256
 
 # for batch input
-input_image1 = load_image("./demo/4_blackarm.png")  # load_image("https://cvlab-zero123-live.hf.space/file=/home/user/app/configs/4_blackarm.png")
-input_image2 = load_image("./demo/8_motor.png")  # load_image("https://cvlab-zero123-live.hf.space/file=/home/user/app/configs/8_motor.png")
-input_image3 = load_image("./demo/7_london.png")  # load_image("https://cvlab-zero123-live.hf.space/file=/home/user/app/configs/7_london.png")
+input_image1 = load_image(
+    "./demo/4_blackarm.png"
+)  # load_image("https://cvlab-zero123-live.hf.space/file=/home/user/app/configs/4_blackarm.png")
+input_image2 = load_image(
+    "./demo/8_motor.png"
+)  # load_image("https://cvlab-zero123-live.hf.space/file=/home/user/app/configs/8_motor.png")
+input_image3 = load_image(
+    "./demo/7_london.png"
+)  # load_image("https://cvlab-zero123-live.hf.space/file=/home/user/app/configs/7_london.png")
 input_images = [input_image1, input_image2, input_image3]
 query_poses = [query_pose1, query_pose2, query_pose3]
 
@@ -2942,8 +2996,8 @@ import PIL.Image as Image
 
 pre_images = []
 models = dict()
-print('Instantiating Carvekit HiInterface...')
-models['carvekit'] = create_carvekit_interface()
+print("Instantiating Carvekit HiInterface...")
+models["carvekit"] = create_carvekit_interface()
 if not isinstance(input_images, list):
     input_images = [input_images]
 for raw_im in input_images:
@@ -2953,8 +3007,16 @@ for raw_im in input_images:
 input_images = pre_images
 
 # infer pipeline, in original zero123 num_inference_steps=76
-images = pipe(input_imgs=input_images, prompt_imgs=input_images, poses=query_poses, height=H, width=W,
-              guidance_scale=3.0, num_images_per_prompt=num_images_per_prompt, num_inference_steps=50).images
+images = pipe(
+    input_imgs=input_images,
+    prompt_imgs=input_images,
+    poses=query_poses,
+    height=H,
+    width=W,
+    guidance_scale=3.0,
+    num_images_per_prompt=num_images_per_prompt,
+    num_inference_steps=50,
+).images
 
 # save imgs
 log_dir = "logs"
@@ -2963,7 +3025,7 @@ bs = len(input_images)
 i = 0
 for obj in range(bs):
     for idx in range(num_images_per_prompt):
-        images[i].save(os.path.join(log_dir,f"obj{obj}_{idx}.jpg"))
+        images[i].save(os.path.join(log_dir, f"obj{obj}_{idx}.jpg"))
         i += 1
 ```
 
@@ -2973,13 +3035,16 @@ This pipeline uses the Reference. Refer to the [Stable Diffusion Reference](http
 
 ```py
 import torch
+
 # from diffusers import DiffusionPipeline
 from diffusers.utils import load_image
 from diffusers.schedulers import UniPCMultistepScheduler
 
 from .stable_diffusion_xl_reference import StableDiffusionXLReferencePipeline
 
-input_image = load_image("https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/sdxl_reference_input_cat.jpg")
+input_image = load_image(
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/sdxl_reference_input_cat.jpg"
+)
 
 # pipe = DiffusionPipeline.from_pretrained(
 #     "stabilityai/stable-diffusion-xl-base-1.0",
@@ -2989,18 +3054,14 @@ input_image = load_image("https://huggingface.co/datasets/huggingface/documentat
 #     variant="fp16").to('cuda:0')
 
 pipe = StableDiffusionXLReferencePipeline.from_pretrained(
-    "stabilityai/stable-diffusion-xl-base-1.0",
-    dtype=torch.float16,
-    use_safetensors=True,
-    variant="fp16").to('cuda:0')
+    "stabilityai/stable-diffusion-xl-base-1.0", dtype=torch.float16, use_safetensors=True, variant="fp16"
+).to("cuda:0")
 
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
 
-result_img = pipe(ref_image=input_image,
-      prompt="a dog",
-      num_inference_steps=20,
-      reference_attn=True,
-      reference_adain=True).images[0]
+result_img = pipe(
+    ref_image=input_image, prompt="a dog", num_inference_steps=20, reference_attn=True, reference_adain=True
+).images[0]
 ```
 
 Reference Image
@@ -3061,9 +3122,7 @@ ref_image = load_image(
 
 # initialize the models and pipeline
 controlnet_conditioning_scale = 0.5  # recommended for good generalization
-controlnet = ControlNetModel.from_pretrained(
-    "diffusers/controlnet-canny-sdxl-1.0", dtype=torch.float16
-)
+controlnet = ControlNetModel.from_pretrained("diffusers/controlnet-canny-sdxl-1.0", dtype=torch.float16)
 vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16)
 pipe = StableDiffusionXLControlNetReferencePipeline.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0", controlnet=controlnet, vae=vae, dtype=torch.float16
@@ -3088,7 +3147,7 @@ image = pipe(
     reference_attn=False,
     reference_adain=True,
     style_fidelity=1.0,
-    generator=torch.Generator("cuda").manual_seed(42)
+    generator=torch.Generator("cuda").manual_seed(42),
 ).images[0]
 ```
 
@@ -3134,7 +3193,9 @@ from diffusers import DiffusionPipeline
 # make sure you're logged in with `hf auth login`
 model_id_or_path = "stable-diffusion-v1-5/stable-diffusion-v1-5"
 # can also be used with dreamlike-art/dreamlike-photoreal-2.0
-pipe = DiffusionPipeline.from_pretrained(model_id_or_path, dtype=torch.float16, custom_pipeline="pipeline_fabric").to("cuda")
+pipe = DiffusionPipeline.from_pretrained(model_id_or_path, dtype=torch.float16, custom_pipeline="pipeline_fabric").to(
+    "cuda"
+)
 
 # let's specify a prompt
 prompt = "An astronaut riding an elephant"
@@ -3142,10 +3203,7 @@ negative_prompt = "lowres, cropped"
 
 # call the pipeline
 image = pipe(
-    prompt=prompt,
-    negative_prompt=negative_prompt,
-    num_inference_steps=20,
-    generator=torch.manual_seed(12)
+    prompt=prompt, negative_prompt=negative_prompt, num_inference_steps=20, generator=torch.manual_seed(12)
 ).images[0]
 
 image.save("horse_to_elephant.jpg")
@@ -3199,8 +3257,7 @@ pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(pipeline.schedu
 generator = torch.Generator(device="cpu").manual_seed(4)
 
 prompt = "a man wearing a mask"
-result = pipeline(prompt=prompt, image=img_paint, mask=mask, strength=0.75,
-                  generator=generator)
+result = pipeline(prompt=prompt, image=img_paint, mask=mask, strength=0.75, generator=generator)
 result.images[0].save("result.png")
 ```
 
@@ -3271,28 +3328,16 @@ from diffusers import DiffusionPipeline
 import numpy as np
 from PIL import Image
 
-pipe = DiffusionPipeline.from_pretrained(
-    "CompVis/stable-diffusion-v1-4", 
-    custom_pipeline="pipeline_prompt2prompt"
-).to("cuda")
+pipe = DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", custom_pipeline="pipeline_prompt2prompt").to(
+    "cuda"
+)
 
-prompts = [
-    "A turtle playing with a ball",
-    "A monkey playing with a ball"
-]
+prompts = ["A turtle playing with a ball", "A monkey playing with a ball"]
 
-cross_attention_kwargs = {
-    "edit_type": "replace",
-    "cross_replace_steps": 0.4,
-    "self_replace_steps": 0.4
-}
+cross_attention_kwargs = {"edit_type": "replace", "cross_replace_steps": 0.4, "self_replace_steps": 0.4}
 
 outputs = pipe(
-    prompt=prompts,
-    height=512,
-    width=512,
-    num_inference_steps=50,
-    cross_attention_kwargs=cross_attention_kwargs
+    prompt=prompts, height=512, width=512, num_inference_steps=50, cross_attention_kwargs=cross_attention_kwargs
 )
 
 outputs.images[0].save("output_image_0.png")
@@ -3303,22 +3348,20 @@ And abbreviated examples for the other edits:
 `ReplaceEdit with local blend`
 
 ```python
-prompts = ["A turtle playing with a ball",
-           "A monkey playing with a ball"]
+prompts = ["A turtle playing with a ball", "A monkey playing with a ball"]
 
 cross_attention_kwargs = {
     "edit_type": "replace",
     "cross_replace_steps": 0.4,
     "self_replace_steps": 0.4,
-    "local_blend_words": ["turtle", "monkey"]
+    "local_blend_words": ["turtle", "monkey"],
 }
 ```
 
 `RefineEdit`
 
 ```python
-prompts = ["A turtle",
-           "A turtle in a forest"]
+prompts = ["A turtle", "A turtle in a forest"]
 
 cross_attention_kwargs = {
     "edit_type": "refine",
@@ -3330,14 +3373,13 @@ cross_attention_kwargs = {
 `RefineEdit with local blend`
 
 ```python
-prompts = ["A turtle",
-           "A turtle in a forest"]
+prompts = ["A turtle", "A turtle in a forest"]
 
 cross_attention_kwargs = {
     "edit_type": "refine",
     "cross_replace_steps": 0.4,
     "self_replace_steps": 0.4,
-    "local_blend_words": ["in", "a" , "forest"]
+    "local_blend_words": ["in", "a", "forest"],
 }
 ```
 
@@ -3351,7 +3393,7 @@ edit_kcross_attention_kwargswargs = {
     "cross_replace_steps": 0.4,
     "self_replace_steps": 0.4,
     "equalizer_words": ["smiling"],
-    "equalizer_strengths": [5]
+    "equalizer_strengths": [5],
 }
 ```
 
@@ -3373,7 +3415,9 @@ The model can be used with `diffusers` as follows:
 from diffusers import DiffusionPipeline
 import torch
 
-pipe = DiffusionPipeline.from_pretrained("SimianLuo/LCM_Dreamshaper_v7", custom_pipeline="latent_consistency_txt2img", custom_revision="main")
+pipe = DiffusionPipeline.from_pretrained(
+    "SimianLuo/LCM_Dreamshaper_v7", custom_pipeline="latent_consistency_txt2img", custom_revision="main"
+)
 
 # To save GPU memory, torch.float16 can be used, but it may compromise image quality.
 pipe.to(torch_device="cuda", dtype=torch.float32)
@@ -3387,7 +3431,9 @@ prompt = "Self-portrait oil painting, a beautiful cyborg with golden hair, 8k"
 # Can be set to 1~50 steps. LCM supports fast inference even <= 4 steps. Recommend: 1~8 steps.
 num_inference_steps = 4
 
-images = pipe(prompt=prompt, num_inference_steps=num_inference_steps, guidance_scale=8.0, lcm_origin_steps=50, output_type="pil").images
+images = pipe(
+    prompt=prompt, num_inference_steps=num_inference_steps, guidance_scale=8.0, lcm_origin_steps=50, output_type="pil"
+).images
 ```
 
 For any questions or feedback, feel free to reach out to [Simian Luo](https://github.com/luosiallen).
@@ -3414,14 +3460,22 @@ pipe.to(torch_device="cuda", dtype=torch.float32)
 prompt = "Self-portrait oil painting, a beautiful cyborg with golden hair, 8k"
 
 
-input_image=Image.open("myimg.png")
+input_image = Image.open("myimg.png")
 
 strength = 0.5  # strength =0 (no change) strength=1 (completely overwrite image)
 
 # Can be set to 1~50 steps. LCM supports fast inference even <= 4 steps. Recommend: 1~8 steps.
 num_inference_steps = 4
 
-images = pipe(prompt=prompt, image=input_image, strength=strength, num_inference_steps=num_inference_steps, guidance_scale=8.0, lcm_origin_steps=50, output_type="pil").images
+images = pipe(
+    prompt=prompt,
+    image=input_image,
+    strength=strength,
+    num_inference_steps=num_inference_steps,
+    guidance_scale=8.0,
+    lcm_origin_steps=50,
+    output_type="pil",
+).images
 ```
 
 ### Latent Consistency Interpolation Pipeline
@@ -3434,7 +3488,9 @@ import numpy as np
 
 from diffusers import DiffusionPipeline
 
-pipe = DiffusionPipeline.from_pretrained("SimianLuo/LCM_Dreamshaper_v7", custom_pipeline="latent_consistency_interpolate")
+pipe = DiffusionPipeline.from_pretrained(
+    "SimianLuo/LCM_Dreamshaper_v7", custom_pipeline="latent_consistency_interpolate"
+)
 
 # To save GPU memory, torch.float16 can be used, but it may compromise image quality.
 pipe.to(torch_device="cuda", dtype=torch.float32)
@@ -3444,7 +3500,7 @@ prompts = [
     "Self-portrait oil painting, an extremely strong man, body builder, Huge Jackman, 8k",
     "An astronaut floating in space, renaissance art, realistic, high quality, 8k",
     "Oil painting of a cat, cute, dream-like",
-    "Hugging face emoji, cute, realistic"
+    "Hugging face emoji, cute, realistic",
 ]
 num_inference_steps = 4
 num_interpolation_steps = 60
@@ -3500,13 +3556,21 @@ depth_image[0].save("lemons_ldm3d_depth.png")
 
 # Upscale the previous output to a resolution of (1024, 1024)
 
-pipe_ldm3d_upscale = DiffusionPipeline.from_pretrained("Intel/ldm3d-sr", custom_pipeline="pipeline_stable_diffusion_upscale_ldm3d")
+pipe_ldm3d_upscale = DiffusionPipeline.from_pretrained(
+    "Intel/ldm3d-sr", custom_pipeline="pipeline_stable_diffusion_upscale_ldm3d"
+)
 
 pipe_ldm3d_upscale.to("cuda")
 
 low_res_img = Image.open("lemons_ldm3d_rgb.jpg").convert("RGB")
 low_res_depth = Image.open("lemons_ldm3d_depth.png").convert("L")
-outputs = pipe_ldm3d_upscale(prompt="high quality high resolution uhd 4k image", rgb=low_res_img, depth=low_res_depth, num_inference_steps=50, target_res=[1024, 1024])
+outputs = pipe_ldm3d_upscale(
+    prompt="high quality high resolution uhd 4k image",
+    rgb=low_res_img,
+    depth=low_res_depth,
+    num_inference_steps=50,
+    target_res=[1024, 1024],
+)
 
 upscaled_rgb, upscaled_depth = outputs.rgb[0], outputs.depth[0]
 upscaled_rgb.save("upscaled_lemons_rgb.png")
@@ -3533,13 +3597,10 @@ from examples.community.pipeline_stable_diffusion_xl_controlnet_adapter import (
 )
 
 controlnet_depth = ControlNetModel.from_pretrained(
-    "diffusers/controlnet-depth-sdxl-1.0",
-    dtype=torch.float16,
-    variant="fp16",
-    use_safetensors=True
+    "diffusers/controlnet-depth-sdxl-1.0", dtype=torch.float16, variant="fp16", use_safetensors=True
 )
 adapter_depth = T2IAdapter.from_pretrained(
-  "TencentARC/t2i-adapter-depth-midas-sdxl-1.0", dtype=torch.float16, variant="fp16", use_safetensors=True
+    "TencentARC/t2i-adapter-depth-midas-sdxl-1.0", dtype=torch.float16, variant="fp16", use_safetensors=True
 )
 vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16, use_safetensors=True)
 
@@ -3556,7 +3617,7 @@ pipe = pipe.to("cuda")
 pipe.enable_xformers_memory_efficient_attention()
 # pipe.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
 midas_depth = MidasDetector.from_pretrained(
-  "valhalla/t2iadapter-aux-models", filename="dpt_large_384.pt", model_type="dpt_large"
+    "valhalla/t2iadapter-aux-models", filename="dpt_large_384.pt", model_type="dpt_large"
 ).to("cuda")
 
 prompt = "a tiger sitting on a park bench"
@@ -3564,9 +3625,7 @@ img_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/
 
 image = load_image(img_url).resize((1024, 1024))
 
-depth_image = midas_depth(
-  image, detect_resolution=512, image_resolution=1024
-)
+depth_image = midas_depth(image, detect_resolution=512, image_resolution=1024)
 
 strength = 0.5
 
@@ -3598,13 +3657,10 @@ from examples.community.pipeline_stable_diffusion_xl_controlnet_adapter_inpaint 
 )
 
 controlnet_depth = ControlNetModel.from_pretrained(
-    "diffusers/controlnet-depth-sdxl-1.0",
-    dtype=torch.float16,
-    variant="fp16",
-    use_safetensors=True
+    "diffusers/controlnet-depth-sdxl-1.0", dtype=torch.float16, variant="fp16", use_safetensors=True
 )
 adapter_depth = T2IAdapter.from_pretrained(
-  "TencentARC/t2i-adapter-depth-midas-sdxl-1.0", dtype=torch.float16, variant="fp16", use_safetensors=True
+    "TencentARC/t2i-adapter-depth-midas-sdxl-1.0", dtype=torch.float16, variant="fp16", use_safetensors=True
 )
 vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16, use_safetensors=True)
 
@@ -3621,7 +3677,7 @@ pipe = pipe.to("cuda")
 pipe.enable_xformers_memory_efficient_attention()
 # pipe.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
 midas_depth = MidasDetector.from_pretrained(
-  "valhalla/t2iadapter-aux-models", filename="dpt_large_384.pt", model_type="dpt_large"
+    "valhalla/t2iadapter-aux-models", filename="dpt_large_384.pt", model_type="dpt_large"
 ).to("cuda")
 
 prompt = "a tiger sitting on a park bench"
@@ -3631,9 +3687,7 @@ mask_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data
 image = load_image(img_url).resize((1024, 1024))
 mask_image = load_image(mask_url).resize((1024, 1024))
 
-depth_image = midas_depth(
-  image, detect_resolution=512, image_resolution=1024
-)
+depth_image = midas_depth(image, detect_resolution=512, image_resolution=1024)
 
 strength = 0.4
 
@@ -3667,10 +3721,7 @@ from examples.community.regional_prompting_stable_diffusion import RegionalPromp
 
 pipe = RegionalPromptingStableDiffusionPipeline.from_single_file(model_path, vae=vae)
 
-rp_args = {
-    "mode":"rows",
-    "div": "1;1;1"
-}
+rp_args = {"mode": "rows", "div": "1;1;1"}
 
 prompt = """
 green hair twintail BREAK
@@ -3686,14 +3737,14 @@ images = pipe(
     width=512,
     num_inference_steps=20,
     num_images_per_prompt=1,
-    rp_args=rp_args
-    ).images
+    rp_args=rp_args,
+).images
 
 time = time.strftime(r"%Y%m%d%H%M%S")
 i = 1
 for image in images:
     i += 1
-    fileName = f'img-{time}-{i+1}.png'
+    fileName = f"img-{time}-{i + 1}.png"
     image.save(fileName)
 ```
 
@@ -3715,10 +3766,7 @@ blue skirt
 The prompt consists of instructions separated by the term `BREAK` and is assigned to different regions of a two-dimensional space. The image is initially split in the main splitting direction, which in this case is rows, due to the presence of a single semicolon `;`, dividing the space into an upper and a lower section. Additional sub-splitting is then applied, indicated by commas. The upper row is split into ratios of `2:1:1`, while the lower row is split into a ratio of `4:6`. Rows themselves are split in a `1:2` ratio. According to the reference image, the blue sky is designated as the first region, green hair as the second, the bookshelf as the third, and so on, in a sequence based on their position from the top left. The terrarium is placed on the desk in the fourth region, and the orange dress and sofa are in the fifth region, conforming to their respective splits.
 
 ```py
-rp_args = {
-    "mode":"rows",
-    "div": "1,2,1,1;2,4,6"
-}
+rp_args = {"mode": "rows", "div": "1,2,1,1;2,4,6"}
 
 prompt = """
 blue sky BREAK
@@ -3851,10 +3899,7 @@ To activate Regional Prompter, it is necessary to enter settings in `rp_args`. T
 Parameters are specified through the `rp_arg`(dictionary type).
 
 ```py
-rp_args = {
-    "mode":"rows",
-    "div": "1;1;1"
-}
+rp_args = {"mode": "rows", "div": "1;1;1"}
 
 pipe(prompt=prompt, rp_args=rp_args)
 ```
@@ -3895,20 +3940,21 @@ The Pipeline supports `compel` syntax. Input prompts using the `compel` structur
     import scipy
     from torch import nn
 
+
     # define the Gaussian blurring operator first
     class GaussialBlurOperator(nn.Module):
         def __init__(self, kernel_size, intensity):
             super().__init__()
 
             class Blurkernel(nn.Module):
-                def __init__(self, blur_type='gaussian', kernel_size=31, std=3.0):
+                def __init__(self, blur_type="gaussian", kernel_size=31, std=3.0):
                     super().__init__()
                     self.blur_type = blur_type
                     self.kernel_size = kernel_size
                     self.std = std
                     self.seq = nn.Sequential(
-                        nn.ReflectionPad2d(self.kernel_size//2),
-                        nn.Conv2d(3, 3, self.kernel_size, stride=1, padding=0, bias=False, groups=3)
+                        nn.ReflectionPad2d(self.kernel_size // 2),
+                        nn.Conv2d(3, 3, self.kernel_size, stride=1, padding=0, bias=False, groups=3),
                     )
                     self.weights_init()
 
@@ -3941,9 +3987,7 @@ The Pipeline supports `compel` syntax. Input prompts using the `compel` structur
                     return self.k
 
             self.kernel_size = kernel_size
-            self.conv = Blurkernel(blur_type='gaussian',
-                                kernel_size=kernel_size,
-                                std=intensity)
+            self.conv = Blurkernel(blur_type="gaussian", kernel_size=kernel_size, std=intensity)
             self.kernel = self.conv.get_kernel()
             self.conv.update_weights(self.kernel.type(torch.float32))
 
@@ -3964,9 +4008,9 @@ The Pipeline supports `compel` syntax. Input prompts using the `compel` structur
 
     ```python
     # set up source image
-    src = Image.open('sample.png')
+    src = Image.open("sample.png")
     # read image into [1,3,H,W]
-    src = torch.from_numpy(np.array(src, dtype=np.float32)).permute(2,0,1)[None]
+    src = torch.from_numpy(np.array(src, dtype=np.float32)).permute(2, 0, 1)[None]
     # normalize image to [-1,1]
     src = (src / 127.5) - 1.0
     src = src.to("cuda")
@@ -3976,8 +4020,8 @@ The Pipeline supports `compel` syntax. Input prompts using the `compel` structur
     measurement = operator(src)
 
     # save the source and corrupted images
-    save_image((src+1.0)/2.0, "dps_src.png")
-    save_image((measurement+1.0)/2.0, "dps_mea.png")
+    save_image((src + 1.0) / 2.0, "dps_src.png")
+    save_image((measurement + 1.0) / 2.0, "dps_mea.png")
     ```
 
 - We provide an example pair of saved source and corrupted images, using the Gaussian blur operator above
@@ -3991,7 +4035,7 @@ The Pipeline supports `compel` syntax. Input prompts using the `compel` structur
 
     ```python
     def RMSELoss(yhat, y):
-        return torch.sqrt(torch.sum((yhat-y)**2))
+        return torch.sqrt(torch.sum((yhat - y) ** 2))
     ```
 
 - And next, as any other diffusion models, we need the score estimator and scheduler. As we are working with $256x256$ face images, we use ddpm-celebahq-256:
@@ -4055,7 +4099,12 @@ pipe = DiffusionPipeline.from_pretrained(
     dtype=torch.float16,
 ).to(device="cuda")
 pipe.scheduler = DPMSolverMultistepScheduler.from_pretrained(
-    model_id, subfolder="scheduler", beta_schedule="linear", clip_sample=False, timestep_spacing="linspace", steps_offset=1
+    model_id,
+    subfolder="scheduler",
+    beta_schedule="linear",
+    clip_sample=False,
+    timestep_spacing="linspace",
+    steps_offset=1,
 )
 pipe.enable_vae_slicing()
 
@@ -4118,14 +4167,20 @@ pipe = DiffusionPipeline.from_pretrained(
     dtype=torch.float16,
 ).to(device="cuda")
 pipe.scheduler = DPMSolverMultistepScheduler.from_pretrained(
-    model_id, subfolder="scheduler", clip_sample=False, timestep_spacing="linspace", steps_offset=1, beta_schedule="linear",
+    model_id,
+    subfolder="scheduler",
+    clip_sample=False,
+    timestep_spacing="linspace",
+    steps_offset=1,
+    beta_schedule="linear",
 )
 pipe.enable_vae_slicing()
+
 
 def load_video(file_path: str):
     images = []
 
-    if file_path.startswith(('http://', 'https://')):
+    if file_path.startswith(("http://", "https://")):
         # If the file_path is a URL
         response = requests.get(file_path)
         response.raise_for_status()
@@ -4140,6 +4195,7 @@ def load_video(file_path: str):
         images.append(pil_image)
 
     return images
+
 
 video = load_video("dance.gif")
 
@@ -4224,7 +4280,7 @@ images = pipe(
     cosine_scale_3=1,
     sigma=0.8,
     multi_decoder=True,
-    show_image=True
+    show_image=True,
 )
 ```
 
@@ -4238,7 +4294,7 @@ def image_grid(imgs, save_path=None):
         h_, w_ = imgs[i].size
         w += w_
     h = h_
-    grid = Image.new('RGB', size=(w, h))
+    grid = Image.new("RGB", size=(w, h))
     grid_w, grid_h = grid.size
 
     w = 0
@@ -4250,6 +4306,7 @@ def image_grid(imgs, save_path=None):
         w += w_
 
     return grid
+
 
 image_grid(images, save_path="./outputs/")
 ```
@@ -4281,16 +4338,19 @@ pipe = DiffusionPipeline.from_pretrained(model_path, scheduler=scheduler, custom
 device = "cuda" if torch.cuda.is_available() else "cpu"
 pipe.to(device)
 
+
 # Function to load image from URL
 def load_image_from_url(url):
     response = requests.get(url)
     return Image.open(BytesIO(response.content)).convert("RGB")
+
 
 # Function to prepare mask
 def prepare_mask(mask_image):
     # Convert to grayscale
     mask = mask_image.convert("L")
     return mask
+
 
 # Function to convert numpy array to PIL Image
 def array_to_pil(array):
@@ -4300,7 +4360,7 @@ def array_to_pil(array):
             array = (array * 255).astype(np.uint8)
         else:
             array = array.astype(np.uint8)
-    
+
     # Handle different array shapes
     if len(array.shape) == 3:
         if array.shape[0] == 3:  # If channels first
@@ -4314,9 +4374,10 @@ def array_to_pil(array):
     else:
         raise ValueError(f"Unexpected array shape: {array.shape}")
 
+
 # Image and mask URLs
-image_url = 'https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo.png'
-mask_url = 'https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo_mask.png'
+image_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo.png"
+mask_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo_mask.png"
 
 # Load the images
 image = load_image_from_url(image_url)
@@ -4336,18 +4397,13 @@ target_points = [[64, 64]]  # Adjusted for 512x512 image
 
 # Generate the output image
 output_array = pipe(
-    prompt=prompt,
-    image=image,
-    mask_image=mask,
-    source_points=source_points,
-    target_points=target_points
+    prompt=prompt, image=image, mask_image=mask, source_points=source_points, target_points=target_points
 )
 
 # Convert output array to PIL Image and save
 output_image = array_to_pil(output_array)
 output_image.save("./output.png")
 print("Output image saved as './output.png'")
-
 ```
 
 ### Instaflow Pipeline
@@ -4359,13 +4415,13 @@ from diffusers import DiffusionPipeline
 import torch
 
 
-pipe = DiffusionPipeline.from_pretrained("XCLIU/instaflow_0_9B_from_sd_1_5", dtype=torch.float16, custom_pipeline="instaflow_one_step")
+pipe = DiffusionPipeline.from_pretrained(
+    "XCLIU/instaflow_0_9B_from_sd_1_5", dtype=torch.float16, custom_pipeline="instaflow_one_step"
+)
 pipe.to("cuda")  ### if GPU is not available, comment this line
 prompt = "A hyper-realistic photo of a cute cat."
 
-images = pipe(prompt=prompt,
-            num_inference_steps=1,
-            guidance_scale=0.0).images
+images = pipe(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images
 images[0].save("./image.png")
 ```
 
@@ -4379,13 +4435,13 @@ import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-pipe = DiffusionPipeline.from_pretrained("XCLIU/instaflow_0_9B_from_sd_1_5", dtype=torch.float16, custom_pipeline="instaflow_one_step")
+pipe = DiffusionPipeline.from_pretrained(
+    "XCLIU/instaflow_0_9B_from_sd_1_5", dtype=torch.float16, custom_pipeline="instaflow_one_step"
+)
 pipe.to(device)  ### if GPU is not available, comment this line
 pipe.load_lora_weights("artificialguybr/logo-redmond-1-5v-logo-lora-for-liberteredmond-sd-1-5")
 prompt = "logo, A logo for a fitness app, dynamic running figure, energetic colors (red, orange) ),LogoRedAF ,"
-images = pipe(prompt=prompt,
-            num_inference_steps=1,
-            guidance_scale=0.0).images
+images = pipe(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images
 images[0].save("./image.png")
 ```
 
@@ -4437,6 +4493,7 @@ This is the Diffusers implementation of zero-shot video-to-video translation pip
 
 ```py
 import sys
+
 gmflow_dir = "/path/to/gmflow"
 sys.path.insert(0, gmflow_dir)
 
@@ -4447,6 +4504,7 @@ import torch
 
 import cv2
 from PIL import Image
+
 
 def video_to_frame(video_path: str, interval: int):
     vidcap = cv2.VideoCapture(video_path)
@@ -4466,10 +4524,10 @@ def video_to_frame(video_path: str, interval: int):
     vidcap.release()
     return res
 
-input_video_path = 'path/to/video'
+
+input_video_path = "path/to/video"
 input_interval = 10
-frames = video_to_frame(
-    input_video_path, input_interval)
+frames = video_to_frame(input_video_path, input_interval)
 
 control_frames = []
 # get canny image
@@ -4481,12 +4539,12 @@ for frame in frames:
     control_frames.append(canny_image)
 
 # You can use any ControlNet here
-controlnet = ControlNetModel.from_pretrained(
-    "lllyasviel/sd-controlnet-canny").to('cuda')
+controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny").to("cuda")
 
 # You can use any finetuned SD here
 pipe = DiffusionPipeline.from_pretrained(
-    "stable-diffusion-v1-5/stable-diffusion-v1-5", controlnet=controlnet, custom_pipeline='rerender_a_video').to('cuda')
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", controlnet=controlnet, custom_pipeline="rerender_a_video"
+).to("cuda")
 
 # Optional: you can download vae-ft-mse-840000-ema-pruned.ckpt to enhance the results
 # pipe.vae = AutoencoderKL.from_single_file(
@@ -4509,11 +4567,10 @@ output_frames = pipe(
     mask_start=0.5,
     mask_end=0.8,
     mask_strength=0.5,
-    negative_prompt='longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality'
+    negative_prompt="longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality",
 ).frames[0]
 
-export_to_video(
-    output_frames, "/path/to/video.mp4", 5)
+export_to_video(output_frames, "/path/to/video.mp4", 5)
 ```
 
 ### StyleAligned Pipeline
@@ -4530,7 +4587,9 @@ from diffusers import DiffusionPipeline
 from PIL import Image
 
 model_id = "a-r-r-o-w/dreamshaper-xl-turbo"
-pipe = DiffusionPipeline.from_pretrained(model_id, dtype=torch.float16, variant="fp16", custom_pipeline="pipeline_sdxl_style_aligned")
+pipe = DiffusionPipeline.from_pretrained(
+    model_id, dtype=torch.float16, variant="fp16", custom_pipeline="pipeline_sdxl_style_aligned"
+)
 pipe = pipe.to("cuda")
 
 # Enable memory saving techniques
@@ -4538,10 +4597,10 @@ pipe.enable_vae_slicing()
 pipe.enable_vae_tiling()
 
 prompt = [
-  "a toy train. macro photo. 3d game asset",
-  "a toy airplane. macro photo. 3d game asset",
-  "a toy bicycle. macro photo. 3d game asset",
-  "a toy car. macro photo. 3d game asset",
+    "a toy train. macro photo. 3d game asset",
+    "a toy airplane. macro photo. 3d game asset",
+    "a toy bicycle. macro photo. 3d game asset",
+    "a toy car. macro photo. 3d game asset",
 ]
 negative_prompt = "low quality, worst quality, "
 
@@ -4587,15 +4646,24 @@ from diffusers.utils import export_to_gif, load_image
 
 model_id = "SG161222/Realistic_Vision_V5.1_noVAE"
 adapter = MotionAdapter.from_pretrained("guoyww/animatediff-motion-adapter-v1-5-2")
-pipe = DiffusionPipeline.from_pretrained(model_id, motion_adapter=adapter, custom_pipeline="pipeline_animatediff_img2video").to("cuda")
-pipe.scheduler = DDIMScheduler.from_pretrained(model_id, subfolder="scheduler", clip_sample=False, timestep_spacing="linspace", beta_schedule="linear", steps_offset=1)
+pipe = DiffusionPipeline.from_pretrained(
+    model_id, motion_adapter=adapter, custom_pipeline="pipeline_animatediff_img2video"
+).to("cuda")
+pipe.scheduler = DDIMScheduler.from_pretrained(
+    model_id,
+    subfolder="scheduler",
+    clip_sample=False,
+    timestep_spacing="linspace",
+    beta_schedule="linear",
+    steps_offset=1,
+)
 
 image = load_image("snail.png")
 output = pipe(
-  image=image,
-  prompt="A snail moving on the ground",
-  strength=0.8,
-  latent_interpolation_method="slerp",  # can be lerp, slerp, or your own callback
+    image=image,
+    prompt="A snail moving on the ground",
+    strength=0.8,
+    latent_interpolation_method="slerp",  # can be lerp, slerp, or your own callback
 )
 frames = output.frames[0]
 export_to_gif(frames, "animation.gif")
@@ -4632,7 +4700,7 @@ pipeline = DiffusionPipeline.from_pretrained(
     dtype=torch.float16,
     scheduler=noise_scheduler,
     vae=vae,
-    custom_pipeline="ip_adapter_face_id"
+    custom_pipeline="ip_adapter_face_id",
 )
 pipeline.load_ip_adapter_face_id("h94/IP-Adapter-FaceID", "ip-adapter-faceid_sd15.bin")
 pipeline.to("cuda")
@@ -4642,7 +4710,7 @@ num_images = 2
 
 image = load_image("https://huggingface.co/datasets/YiYiXu/testing-images/resolve/main/ai_face2.png")
 
-app = FaceAnalysis(name="buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+app = FaceAnalysis(name="buffalo_l", providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
 app.prepare(ctx_id=0, det_size=(640, 640))
 image = cv2.cvtColor(np.asarray(image), cv2.COLOR_BGR2RGB)
 faces = app.get(image)
@@ -4651,8 +4719,11 @@ images = pipeline(
     prompt="A photo of a girl wearing a black dress, holding red roses in hand, upper body, behind is the Eiffel Tower",
     image_embeds=image,
     negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
-    num_inference_steps=20, num_images_per_prompt=num_images, width=512, height=704,
-    generator=generator
+    num_inference_steps=20,
+    num_images_per_prompt=num_images,
+    width=512,
+    height=704,
+    generator=generator,
 ).images
 
 for i in range(num_images):
@@ -4679,7 +4750,7 @@ from pipeline_stable_diffusion_xl_instantid import StableDiffusionXLInstantIDPip
 
 # prepare 'antelopev2' under ./models
 # https://github.com/deepinsight/insightface/issues/1896#issuecomment-1023867304
-app = FaceAnalysis(name='antelopev2', root='./', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+app = FaceAnalysis(name="antelopev2", root="./", providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
 app.prepare(ctx_id=0, det_size=(640, 640))
 
 # prepare models under ./checkpoints
@@ -4687,21 +4758,21 @@ app.prepare(ctx_id=0, det_size=(640, 640))
 from huggingface_hub import hf_hub_download
 
 hf_hub_download(repo_id="InstantX/InstantID", filename="ControlNetModel/config.json", local_dir="./checkpoints")
-hf_hub_download(repo_id="InstantX/InstantID", filename="ControlNetModel/diffusion_pytorch_model.safetensors", local_dir="./checkpoints")
+hf_hub_download(
+    repo_id="InstantX/InstantID",
+    filename="ControlNetModel/diffusion_pytorch_model.safetensors",
+    local_dir="./checkpoints",
+)
 hf_hub_download(repo_id="InstantX/InstantID", filename="ip-adapter.bin", local_dir="./checkpoints")
 
-face_adapter = './checkpoints/ip-adapter.bin'
-controlnet_path = './checkpoints/ControlNetModel'
+face_adapter = "./checkpoints/ip-adapter.bin"
+controlnet_path = "./checkpoints/ControlNetModel"
 
 # load IdentityNet
 controlnet = ControlNetModel.from_pretrained(controlnet_path, dtype=torch.float16)
 
-base_model = 'wangqixun/YamerMIX_v8'
-pipe = StableDiffusionXLInstantIDPipeline.from_pretrained(
-    base_model,
-    controlnet=controlnet,
-    dtype=torch.float16
-)
+base_model = "wangqixun/YamerMIX_v8"
+pipe = StableDiffusionXLInstantIDPipeline.from_pretrained(base_model, controlnet=controlnet, dtype=torch.float16)
 pipe.to("cuda")
 
 # load adapter
@@ -4712,9 +4783,11 @@ face_image = load_image("https://huggingface.co/datasets/YiYiXu/testing-images/r
 
 # prepare face emb
 face_info = app.get(cv2.cvtColor(np.array(face_image), cv2.COLOR_RGB2BGR))
-face_info = sorted(face_info, key=lambda x:(x['bbox'][2]-x['bbox'][0])*x['bbox'][3]-x['bbox'][1])[-1]  # only use the maximum face
-face_emb = face_info['embedding']
-face_kps = draw_kps(face_image, face_info['kps'])
+face_info = sorted(face_info, key=lambda x: (x["bbox"][2] - x["bbox"][0]) * x["bbox"][3] - x["bbox"][1])[
+    -1
+]  # only use the maximum face
+face_emb = face_info["embedding"]
+face_kps = draw_kps(face_image, face_info["kps"])
 
 # prompt
 prompt = "film noir style, ink sketch|vector, male man, highly detailed, sharp focus, ultra sharpness, monochrome, high contrast, dramatic shadows, 1940s style, mysterious, cinematic"
@@ -4775,6 +4848,7 @@ import sys
 gmflow_dir = "/path/to/gmflow"
 sys.path.insert(0, gmflow_dir)
 
+
 def video_to_frame(video_path: str, interval: int):
     vidcap = cv2.VideoCapture(video_path)
     success = True
@@ -4796,19 +4870,18 @@ def video_to_frame(video_path: str, interval: int):
     return res
 
 
-input_video_path = 'https://github.com/williamyang1991/FRESCO/raw/main/data/car-turn.mp4'
-output_video_path = 'car.gif'
+input_video_path = "https://github.com/williamyang1991/FRESCO/raw/main/data/car-turn.mp4"
+output_video_path = "car.gif"
 
 # You can use any finetuned SD here
-model_path = 'SG161222/Realistic_Vision_V2.0'
+model_path = "SG161222/Realistic_Vision_V2.0"
 
-prompt = 'a red car turns in the winter'
-a_prompt = ', RAW photo, subject, (high detailed skin:1.2), 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3, '
-n_prompt = '(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4), (deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, disconnected limbs, mutation, mutated, ugly, disgusting, amputation'
+prompt = "a red car turns in the winter"
+a_prompt = ", RAW photo, subject, (high detailed skin:1.2), 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3, "
+n_prompt = "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4), (deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, disconnected limbs, mutation, mutated, ugly, disgusting, amputation"
 
 input_interval = 5
-frames = video_to_frame(
-    input_video_path, input_interval)
+frames = video_to_frame(input_video_path, input_interval)
 
 control_frames = []
 # get canny image
@@ -4821,11 +4894,9 @@ for frame in frames:
     control_frames.append(canny_image)
 
 # You can use any ControlNet here
-controlnet = ControlNetModel.from_pretrained(
-    "lllyasviel/sd-controlnet-canny").to('cuda')
+controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny").to("cuda")
 
-pipe = DiffusionPipeline.from_pretrained(
-    model_path, controlnet=controlnet, custom_pipeline='fresco_v2v').to('cuda')
+pipe = DiffusionPipeline.from_pretrained(model_path, controlnet=controlnet, custom_pipeline="fresco_v2v").to("cuda")
 pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
 generator = torch.manual_seed(0)
@@ -4839,11 +4910,10 @@ output_frames = pipe(
     strength=0.75,
     controlnet_conditioning_scale=0.7,
     generator=generator,
-    negative_prompt=n_prompt
+    negative_prompt=n_prompt,
 ).images
 
-output_frames[0].save(output_video_path, save_all=True,
-                 append_images=output_frames[1:], duration=100, loop=0)
+output_frames[0].save(output_video_path, save_all=True, append_images=output_frames[1:], duration=100, loop=0)
 ```
 
 ### AnimateDiff on IPEX
@@ -4883,7 +4953,7 @@ Then you can use the ipex pipeline in a similar way to the default animatediff p
 # For Float32
 output = pipe(prompt="A girl smiling", guidance_scale=1.0, num_inference_steps=step)
 # For BFloat16
-with torch.cpu.amp.autocast(enabled = True, dtype = torch.bfloat16):
+with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
     output = pipe(prompt="A girl smiling", guidance_scale=1.0, num_inference_steps=step)
 ```
 
@@ -4909,28 +4979,34 @@ base = "emilianJR/epiCRealism"  # Choose to your favorite base model.
 adapter = MotionAdapter().to(device, dtype)
 adapter.load_state_dict(load_file(hf_hub_download(repo, ckpt), device=device))
 
+
 # Helper function for time evaluation
 def elapsed_time(pipeline, nb_pass=3, num_inference_steps=1):
     # warmup
     for _ in range(2):
-        output = pipeline(prompt = prompt, guidance_scale=1.0, num_inference_steps = num_inference_steps)
-    #time evaluation
+        output = pipeline(prompt=prompt, guidance_scale=1.0, num_inference_steps=num_inference_steps)
+    # time evaluation
     start = time.time()
     for _ in range(nb_pass):
-        pipeline(prompt = prompt, guidance_scale=1.0, num_inference_steps = num_inference_steps)
+        pipeline(prompt=prompt, guidance_scale=1.0, num_inference_steps=num_inference_steps)
     end = time.time()
     return (end - start) / nb_pass
+
 
 ##############     bf16 inference performance    ###############
 
 # 1. IPEX Pipeline initialization
 pipe = AnimateDiffPipelineIpex.from_pretrained(base, motion_adapter=adapter, dtype=dtype).to(device)
-pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config, timestep_spacing="trailing", beta_schedule="linear")
-pipe.prepare_for_ipex(torch.bfloat16, prompt = prompt)
+pipe.scheduler = EulerDiscreteScheduler.from_config(
+    pipe.scheduler.config, timestep_spacing="trailing", beta_schedule="linear"
+)
+pipe.prepare_for_ipex(torch.bfloat16, prompt=prompt)
 
 # 2. Original Pipeline initialization
 pipe2 = AnimateDiffPipeline.from_pretrained(base, motion_adapter=adapter, dtype=dtype).to(device)
-pipe2.scheduler = EulerDiscreteScheduler.from_config(pipe2.scheduler.config, timestep_spacing="trailing", beta_schedule="linear")
+pipe2.scheduler = EulerDiscreteScheduler.from_config(
+    pipe2.scheduler.config, timestep_spacing="trailing", beta_schedule="linear"
+)
 
 # 3. Compare performance between Original Pipeline and IPEX Pipeline
 with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
@@ -4943,18 +5019,22 @@ with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
 
 # 1. IPEX Pipeline initialization
 pipe3 = AnimateDiffPipelineIpex.from_pretrained(base, motion_adapter=adapter, dtype=dtype).to(device)
-pipe3.scheduler = EulerDiscreteScheduler.from_config(pipe3.scheduler.config, timestep_spacing="trailing", beta_schedule="linear")
-pipe3.prepare_for_ipex(torch.float32, prompt = prompt)
+pipe3.scheduler = EulerDiscreteScheduler.from_config(
+    pipe3.scheduler.config, timestep_spacing="trailing", beta_schedule="linear"
+)
+pipe3.prepare_for_ipex(torch.float32, prompt=prompt)
 
 # 2. Original Pipeline initialization
 pipe4 = AnimateDiffPipeline.from_pretrained(base, motion_adapter=adapter, dtype=dtype).to(device)
-pipe4.scheduler = EulerDiscreteScheduler.from_config(pipe4.scheduler.config, timestep_spacing="trailing", beta_schedule="linear")
+pipe4.scheduler = EulerDiscreteScheduler.from_config(
+    pipe4.scheduler.config, timestep_spacing="trailing", beta_schedule="linear"
+)
 
 # 3. Compare performance between Original Pipeline and IPEX Pipeline
 latency = elapsed_time(pipe3, num_inference_steps=step)
 print("Latency of AnimateDiffPipelineIpex--fp32", latency, "s for total", step, "steps")
 latency = elapsed_time(pipe4, num_inference_steps=step)
-print("Latency of AnimateDiffPipeline--fp32",latency, "s for total", step, "steps")
+print("Latency of AnimateDiffPipeline--fp32", latency, "s for total", step, "steps")
 ```
 ### HunyuanDiT with Differential Diffusion
 
@@ -5033,10 +5113,11 @@ from diffusers import DiffusionPipeline
 from diffusers.utils import make_image_grid
 
 # nesting_level=0 -> 64x64; nesting_level=1 -> 256x256 - 64x64; nesting_level=2 -> 1024x1024 - 256x256 - 64x64
-pipe = DiffusionPipeline.from_pretrained("tolgacangoz/matryoshka-diffusion-models",
-                                         nesting_level=0,
-                                         trust_remote_code=False,  # One needs to give permission for this code to run
-                                         ).to("cuda")
+pipe = DiffusionPipeline.from_pretrained(
+    "tolgacangoz/matryoshka-diffusion-models",
+    nesting_level=0,
+    trust_remote_code=False,  # One needs to give permission for this code to run
+).to("cuda")
 
 prompt0 = "a blue jay stops on the top of a helmet of Japanese samurai, background with sakura tree"
 prompt = f"breathtaking {prompt0}. award-winning, professional, highly detailed"
@@ -5068,9 +5149,11 @@ import torch.nn.functional as F
 from torchvision.transforms.functional import to_tensor, gaussian_blur
 
 dtype = torch.float16
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu") 
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
+scheduler = DDIMScheduler(
+    beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False
+)
 pipeline = DiffusionPipeline.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0",
     custom_pipeline="pipeline_stable_diffusion_xl_attentive_eraser",
@@ -5083,15 +5166,16 @@ pipeline = DiffusionPipeline.from_pretrained(
 
 def preprocess_image(image_path, device):
     image = to_tensor((load_image(image_path)))
-    image = image.unsqueeze_(0).float() * 2 - 1 # [0,1] --> [-1,1]
+    image = image.unsqueeze_(0).float() * 2 - 1  # [0,1] --> [-1,1]
     if image.shape[1] != 3:
         image = image.expand(-1, 3, -1, -1)
         image = F.interpolate(image, (1024, 1024))
         image = image.to(dtype).to(device)
         return image
 
+
 def preprocess_mask(mask_path, device):
-    mask = to_tensor((load_image(mask_path, convert_method=lambda img: img.convert('L'))))
+    mask = to_tensor((load_image(mask_path, convert_method=lambda img: img.convert("L"))))
     mask = mask.unsqueeze_(0).float()  # 0 or 1
     mask = F.interpolate(mask, (1024, 1024))
     mask = gaussian_blur(mask, kernel_size=(77, 77))
@@ -5100,8 +5184,9 @@ def preprocess_mask(mask_path, device):
     mask = mask.to(dtype).to(device)
     return mask
 
-prompt = "" # Set prompt to null
-seed=123 
+
+prompt = ""  # Set prompt to null
+seed = 123
 generator = torch.Generator(device=device).manual_seed(seed)
 source_image_path = "https://raw.githubusercontent.com/Anonym0u3/Images/refs/heads/main/an1024.png"
 mask_path = "https://raw.githubusercontent.com/Anonym0u3/Images/refs/heads/main/an1024_mask.png"
@@ -5109,24 +5194,24 @@ source_image = preprocess_image(source_image_path, device)
 mask = preprocess_mask(mask_path, device)
 
 image = pipeline(
-    prompt=prompt, 
+    prompt=prompt,
     image=source_image,
     mask_image=mask,
     height=1024,
     width=1024,
-    AAS=True, # enable AAS
-    strength=0.8, # inpainting strength
-    rm_guidance_scale=9, # removal guidance scale
-    ss_steps = 9, # similarity suppression steps
-    ss_scale = 0.3, # similarity suppression scale
-    AAS_start_step=0, # AAS start step
-    AAS_start_layer=34, # AAS start layer
-    AAS_end_layer=70, # AAS end layer
-    num_inference_steps=50, # number of inference steps # AAS_end_step = int(strength*num_inference_steps)
+    AAS=True,  # enable AAS
+    strength=0.8,  # inpainting strength
+    rm_guidance_scale=9,  # removal guidance scale
+    ss_steps=9,  # similarity suppression steps
+    ss_scale=0.3,  # similarity suppression scale
+    AAS_start_step=0,  # AAS start step
+    AAS_start_layer=34,  # AAS start layer
+    AAS_end_layer=70,  # AAS end layer
+    num_inference_steps=50,  # number of inference steps # AAS_end_step = int(strength*num_inference_steps)
     generator=generator,
     guidance_scale=1,
 ).images[0]
-image.save('./removed_img.png')
+image.save("./removed_img.png")
 print("Object removal completed")
 ```
 
@@ -5155,14 +5240,14 @@ from diffusers.utils.torch_utils import randn_tensor
 pipe = StableDiffusionPipeline.from_pretrained(
     "stable-diffusion-v1-5/stable-diffusion-v1-5",
     custom_pipeline="hyoungwoncho/sd_perturbed_attention_guidance",
-    dtype=torch.float16
+    dtype=torch.float16,
 )
 
 device = "cuda"
 pipe = pipe.to(device)
 
 pag_scale = 5.0
-pag_applied_layers_index = ['m0']
+pag_applied_layers_index = ["m0"]
 
 batch_size = 4
 seed = 10
@@ -5175,7 +5260,7 @@ if not os.path.exists(grid_dir):
 
 set_seed(seed)
 
-latent_input = randn_tensor(shape=(batch_size,4,64,64), generator=None, device=device, dtype=torch.float16)
+latent_input = randn_tensor(shape=(batch_size, 4, 64, 64), generator=None, device=device, dtype=torch.float16)
 
 output_baseline = pipe(
     "",
@@ -5186,7 +5271,7 @@ output_baseline = pipe(
     pag_scale=0.0,
     pag_applied_layers_index=pag_applied_layers_index,
     num_images_per_prompt=batch_size,
-    latents=latent_input
+    latents=latent_input,
 ).images
 
 output_pag = pipe(
@@ -5198,7 +5283,7 @@ output_pag = pipe(
     pag_scale=5.0,
     pag_applied_layers_index=pag_applied_layers_index,
     num_images_per_prompt=batch_size,
-    latents=latent_input
+    latents=latent_input,
 ).images
 
 grid_image = make_image_grid(output_baseline + output_pag, rows=2, cols=batch_size)
@@ -5266,7 +5351,7 @@ control_image_file = "0_7.jpg"
 
 prompt = "battleship in space, galaxy in background"
 
-control_image_name = control_image_file.split('.')[0]
+control_image_name = control_image_file.split(".")[0]
 
 control_image = load_image(f"{images_path}/{control_image_file}")
 print(control_image.size)
@@ -5274,10 +5359,12 @@ height, width = control_image.size
 
 hed = HEDdetector.from_pretrained("lllyasviel/Annotators")
 
-condition_transform = T.Compose([
-    T.Lambda(lambda img: img.convert('RGB')),
-    T.CenterCrop([image_size, image_size]),
-])
+condition_transform = T.Compose(
+    [
+        T.Lambda(lambda img: img.convert("RGB")),
+        T.CenterCrop([image_size, image_size]),
+    ]
+)
 
 control_image = condition_transform(control_image)
 hed_edge = hed(control_image, detect_resolution=image_size, image_resolution=image_size)
@@ -5296,7 +5383,6 @@ with torch.no_grad():
     )
 
     out.images[0].save(f"{images_path}//{control_image_name}_output.jpg")
-    
 ```
 
 In the folder examples/pixart there is also a script that can be used to train new models.
@@ -5364,8 +5450,7 @@ MAX_SEED = np.iinfo(np.int32).max
 
 # Download weights for additional unet layers
 model_file = hf_hub_download(
-    "jychen9811/FaithDiff",
-    filename="FaithDiff.bin", local_dir="./proc_data/faithdiff", local_dir_use_symlinks=False
+    "jychen9811/FaithDiff", filename="FaithDiff.bin", local_dir="./proc_data/faithdiff", local_dir_use_symlinks=False
 )
 
 # Initialize the models and pipeline
@@ -5376,8 +5461,8 @@ pipe = DiffusionPipeline.from_pretrained(
     model_id,
     dtype=dtype,
     vae=vae,
-    unet=None, #<- Do not load with original model.
-    custom_pipeline="pipeline_faithdiff_stable_diffusion_xl",    
+    unet=None,  # <- Do not load with original model.
+    custom_pipeline="pipeline_faithdiff_stable_diffusion_xl",
     use_safetensors=True,
     variant="fp16",
 ).to(device)
@@ -5398,10 +5483,10 @@ pipe.enable_model_cpu_offload()
 # Set selected scheduler
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
 
-#input params
+# input params
 prompt = "The image features a woman in her 55s with blonde hair and a white shirt, smiling at the camera. She appears to be in a good mood and is wearing a white scarf around her neck. "
-upscale = 2 # scale here
-start_point = "lr" # or "noise"
+upscale = 2  # scale here
+start_point = "lr"  # or "noise"
 latent_tiled_overlap = 0.5
 latent_tiled_size = 1024
 
@@ -5420,17 +5505,18 @@ image = lq_image.resize((width, height), Image.LANCZOS)
 input_image, width_init, height_init, width_now, height_now = pipe.check_image_size(image)
 
 generator = torch.Generator(device=device).manual_seed(random.randint(0, MAX_SEED))
-gen_image = pipe(lr_img=input_image, 
-                 prompt = prompt,                  
-                 num_inference_steps=20, 
-                 guidance_scale=5, 
-                 generator=generator, 
-                 start_point=start_point, 
-                 height = height_now, 
-                 width=width_now, 
-                 overlap=latent_tiled_overlap, 
-                 target_size=(latent_tiled_size, latent_tiled_size)
-                ).images[0]
+gen_image = pipe(
+    lr_img=input_image,
+    prompt=prompt,
+    num_inference_steps=20,
+    guidance_scale=5,
+    generator=generator,
+    start_point=start_point,
+    height=height_now,
+    width=width_now,
+    overlap=latent_tiled_overlap,
+    target_size=(latent_tiled_size, latent_tiled_size),
+).images[0]
 
 cropped_image = gen_image.crop((0, 0, width_init, height_init))
 cropped_image.save("data/result.png")
@@ -5459,9 +5545,14 @@ edit_instruction = "Turn sky into a sunny one"
 
 
 pipe = DiffusionPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-3-medium-diffusers", custom_pipeline="pipeline_stable_diffusion_3_instruct_pix2pix", dtype=torch.float16).to('cuda')
+    "stabilityai/stable-diffusion-3-medium-diffusers",
+    custom_pipeline="pipeline_stable_diffusion_3_instruct_pix2pix",
+    dtype=torch.float16,
+).to("cuda")
 
-pipe.transformer = SD3Transformer2DModel.from_pretrained("CaptainZZZ/sd3-instructpix2pix",dtype=torch.float16).to('cuda')
+pipe.transformer = SD3Transformer2DModel.from_pretrained("CaptainZZZ/sd3-instructpix2pix", dtype=torch.float16).to(
+    "cuda"
+)
 
 edited_image = pipe(
     prompt=edit_instruction,
@@ -5546,7 +5637,7 @@ from diffusers import (
 from diffusers.utils import load_image
 
 # NEW PIPELINE (updated name)
-from pipline_flux_fill_controlnet_Inpaint import  FluxControlNetFillInpaintPipeline
+from pipline_flux_fill_controlnet_Inpaint import FluxControlNetFillInpaintPipeline
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16
@@ -5576,10 +5667,10 @@ fill_pipe = FluxControlNetFillInpaintPipeline.from_pretrained(
 # )
 
 #  OPTIONAL Prior Redux
-#pipe_prior_redux = FluxPriorReduxPipeline.from_pretrained(
+# pipe_prior_redux = FluxPriorReduxPipeline.from_pretrained(
 #    prior_model,
 #    dtype=dtype,
-#).to(device)
+# ).to(device)
 
 # Inputs
 
@@ -5587,10 +5678,10 @@ fill_pipe = FluxControlNetFillInpaintPipeline.from_pretrained(
 
 
 # 1. Prior conditioning
-#prior_out = pipe_prior_redux(
+# prior_out = pipe_prior_redux(
 #    image=cloth_image,
 #    prompt=cloth_prompt,
-#)
+# )
 
 # 2. Fill Inpaint with ControlNet
 
@@ -5605,27 +5696,24 @@ result = fill_pipe(
     prompt="a dog on a bench",
     image=img,
     mask_image=mask,
-
     control_image=control_image_depth,
     control_mode=[2],  # union mode
     control_guidance_start=0.0,
     control_guidance_end=0.8,
     controlnet_conditioning_scale=0.9,
-
     height=1024,
     width=1024,
-
     strength=1.0,
     guidance_scale=50.0,
     num_inference_steps=60,
     max_sequence_length=512,
-
-#    **prior_out,
+    #    **prior_out,
 )
 
 # result.images[0].save("flux_fill_controlnet_inpaint.png")
 
 from datetime import datetime
+
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 result.images[0].save(f"flux_fill_controlnet_inpaint_depth{timestamp}.jpg")
 ```

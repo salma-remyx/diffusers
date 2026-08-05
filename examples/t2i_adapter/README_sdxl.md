@@ -39,6 +39,7 @@ Or if your environment doesn't support an interactive shell (e.g., a notebook)
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -102,9 +103,7 @@ base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
 adapter_path = "path to adapter"
 
 adapter = T2IAdapter.from_pretrained(adapter_path, dtype=torch.float16)
-pipe = StableDiffusionXLAdapterPipeline.from_pretrained(
-    base_model_path, adapter=adapter, dtype=torch.float16
-)
+pipe = StableDiffusionXLAdapterPipeline.from_pretrained(base_model_path, adapter=adapter, dtype=torch.float16)
 
 # speed up diffusion process with faster scheduler and memory optimization
 pipe.scheduler = EulerAncestralDiscreteSchedulerTest.from_config(pipe.scheduler.config)
@@ -118,9 +117,7 @@ prompt = "pale golden rod circle with old lace background"
 
 # generate image
 generator = torch.manual_seed(0)
-image = pipe(
-    prompt, num_inference_steps=20, generator=generator, image=control_image
-).images[0]
+image = pipe(prompt, num_inference_steps=20, generator=generator, image=control_image).images[0]
 image.save("./output.png")
 ```
 

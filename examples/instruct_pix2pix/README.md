@@ -53,6 +53,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -142,38 +143,40 @@ accelerate launch --mixed_precision="fp16" --multi_gpu train_instruct_pix2pix.py
  Once training is complete, we can perform inference:
 
  ```python
-import PIL
-import requests
-import torch
-from diffusers import StableDiffusionInstructPix2PixPipeline
+ import PIL
+ import requests
+ import torch
+ from diffusers import StableDiffusionInstructPix2PixPipeline
 
-model_id = "your_model_id" # <- replace this
-pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(model_id, dtype=torch.float16).to("cuda")
-generator = torch.Generator("cuda").manual_seed(0)
+ model_id = "your_model_id"  # <- replace this
+ pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(model_id, dtype=torch.float16).to("cuda")
+ generator = torch.Generator("cuda").manual_seed(0)
 
-url = "https://huggingface.co/datasets/sayakpaul/sample-datasets/resolve/main/test_pix2pix_4.png"
+ url = "https://huggingface.co/datasets/sayakpaul/sample-datasets/resolve/main/test_pix2pix_4.png"
 
 
-def download_image(url):
-    image = PIL.Image.open(requests.get(url, stream=True).raw)
-    image = PIL.ImageOps.exif_transpose(image)
-    image = image.convert("RGB")
-    return image
+ def download_image(url):
+     image = PIL.Image.open(requests.get(url, stream=True).raw)
+     image = PIL.ImageOps.exif_transpose(image)
+     image = image.convert("RGB")
+     return image
 
-image = download_image(url)
-prompt = "wipe out the lake"
-num_inference_steps = 20
-image_guidance_scale = 1.5
-guidance_scale = 10
 
-edited_image = pipe(prompt,
-    image=image,
-    num_inference_steps=num_inference_steps,
-    image_guidance_scale=image_guidance_scale,
-    guidance_scale=guidance_scale,
-    generator=generator,
-).images[0]
-edited_image.save("edited_image.png")
+ image = download_image(url)
+ prompt = "wipe out the lake"
+ num_inference_steps = 20
+ image_guidance_scale = 1.5
+ guidance_scale = 10
+
+ edited_image = pipe(
+     prompt,
+     image=image,
+     num_inference_steps=num_inference_steps,
+     image_guidance_scale=image_guidance_scale,
+     guidance_scale=guidance_scale,
+     generator=generator,
+ ).images[0]
+ edited_image.save("edited_image.png")
 ```
 
 An example model repo obtained using this training script can be found

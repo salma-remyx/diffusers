@@ -39,6 +39,7 @@ Or if your environment doesn't support an interactive shell (e.g., a notebook)
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -109,9 +110,7 @@ base_model_path = "stabilityai/stable-diffusion-3-medium-diffusers"
 controlnet_path = "DavyMorgan/sd3-controlnet-out"
 
 controlnet = SD3ControlNetModel.from_pretrained(controlnet_path, dtype=torch.float16)
-pipe = StableDiffusion3ControlNetPipeline.from_pretrained(
-    base_model_path, controlnet=controlnet
-)
+pipe = StableDiffusion3ControlNetPipeline.from_pretrained(base_model_path, controlnet=controlnet)
 pipe.to("cuda", torch.float16)
 
 
@@ -120,9 +119,7 @@ prompt = "pale golden rod circle with old lace background"
 
 # generate image
 generator = torch.manual_seed(0)
-image = pipe(
-    prompt, num_inference_steps=20, generator=generator, control_image=control_image
-).images[0]
+image = pipe(prompt, num_inference_steps=20, generator=generator, control_image=control_image).images[0]
 image.save("./output.png")
 ```
 
