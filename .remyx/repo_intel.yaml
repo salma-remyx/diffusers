@@ -1,0 +1,16 @@
+schema_version: 1
+fork: salma-remyx/diffusers
+observed_landing_zones:
+- path: src/diffusers/hooks/
+  shape_tags:
+  - unclassified
+  confirmed_by:
+  - arxiv: 2410.09873v1
+    mode: ''
+    call_site_specifics: ''
+    branch: training-free-adaptive-diffusion-with-bounded-difference-app
+    timestamp: '2026-08-06T08:40:18Z'
+  last_observed: '2026-08-06T08:40:18Z'
+rejected_shapes: []
+coordination_signals: []
+last_updated: '2026-08-06T08:40:18Z'
