@@ -11,6 +11,18 @@ observed_landing_zones:
     branch: training-free-adaptive-diffusion-with-bounded-difference-app
     timestamp: '2026-08-06T08:40:18Z'
   last_observed: '2026-08-06T08:40:18Z'
+- path: src/diffusers/schedulers/
+  shape_tags:
+  - library-shape-public-api
+  confirmed_by:
+  - arxiv: 2505.24210v2
+    mode: Mode 1 (direct port)
+    call_site_specifics: 'Library public API: `from diffusers import STORKScheduler`,
+      wired into src/diffusers/__init__.py and src/diffusers/schedulers/__init__.py
+      identically to every other scheduler (SCMScheduler, ScoreSdeVe'
+    branch: stork-faster-diffusion-and-flow-matching-sampling-by-resolvi
+    timestamp: '2026-08-08T07:08:28Z'
+  last_observed: '2026-08-08T07:08:28Z'
 rejected_shapes: []
 coordination_signals: []
-last_updated: '2026-08-06T08:40:18Z'
+last_updated: '2026-08-08T07:08:28Z'
