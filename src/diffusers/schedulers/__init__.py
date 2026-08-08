@@ -77,6 +77,7 @@ else:
     _import_structure["scheduling_sasolver"] = ["SASolverScheduler"]
     _import_structure["scheduling_scm"] = ["SCMScheduler"]
     _import_structure["scheduling_sde_ve"] = ["ScoreSdeVeScheduler"]
+    _import_structure["scheduling_stork"] = ["STORKScheduler", "STORKSchedulerOutput"]
     _import_structure["scheduling_tcd"] = ["TCDScheduler"]
     _import_structure["scheduling_unclip"] = ["UnCLIPScheduler"]
     _import_structure["scheduling_unipc_multistep"] = ["UniPCMultistepScheduler"]
@@ -160,6 +161,7 @@ if TYPE_CHECKING or DIFFUSERS_SLOW_IMPORT:
         from .scheduling_sasolver import SASolverScheduler
         from .scheduling_scm import SCMScheduler
         from .scheduling_sde_ve import ScoreSdeVeScheduler
+        from .scheduling_stork import STORKScheduler, STORKSchedulerOutput
         from .scheduling_tcd import TCDScheduler
         from .scheduling_unclip import UnCLIPScheduler
         from .scheduling_unipc_multistep import UniPCMultistepScheduler
