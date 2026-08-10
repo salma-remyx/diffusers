@@ -3,14 +3,22 @@ fork: salma-remyx/diffusers
 observed_landing_zones:
 - path: src/diffusers/hooks/
   shape_tags:
-  - unclassified
+  - library-shape-public-api
+  - registry-add
   confirmed_by:
   - arxiv: 2410.09873v1
     mode: ''
     call_site_specifics: ''
     branch: training-free-adaptive-diffusion-with-bounded-difference-app
     timestamp: '2026-08-06T08:40:18Z'
-  last_observed: '2026-08-06T08:40:18Z'
+  - arxiv: 2312.08128v2
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'User-invoked public library API: apply_low_res_feature_cache(module,
+      config), exported from diffusers, applied by external callers to a denoiser
+      such as pipe.unet; once registered the hook fires from '
+    branch: clockwork-diffusion-efficient-generation-with-model-step-dis
+    timestamp: '2026-08-10T07:46:34Z'
+  last_observed: '2026-08-10T07:46:34Z'
 - path: src/diffusers/schedulers/
   shape_tags:
   - library-shape-public-api
@@ -30,4 +38,4 @@ observed_landing_zones:
   last_observed: '2026-08-09T06:58:47Z'
 rejected_shapes: []
 coordination_signals: []
-last_updated: '2026-08-09T06:58:47Z'
+last_updated: '2026-08-10T07:46:34Z'
