@@ -58,10 +58,12 @@ run_profiling.sh         # Bulk launch runs for multiple pipelines
 ```python
 def annotate(func, name):
     """Wrap a function with torch.profiler.record_function for trace annotation."""
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         with torch.profiler.record_function(name):
             return func(*args, **kwargs)
+
     return wrapper
 ```
 

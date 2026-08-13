@@ -61,6 +61,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -105,7 +106,8 @@ from huggingface_hub import snapshot_download
 local_dir = "./3d_icon"
 snapshot_download(
     "LinoyTsaban/3d_icon",
-    local_dir=local_dir, repo_type="dataset",
+    local_dir=local_dir,
+    repo_type="dataset",
     ignore_patterns=".gitattributes",
 )
 ```
@@ -193,9 +195,9 @@ username = "linoyts"
 repo_id = f"{username}/3d-icon-SDXL-LoRA"
 
 pipe = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-1.0",
-        dtype=torch.float16,
-        variant="fp16",
+    "stabilityai/stable-diffusion-xl-base-1.0",
+    dtype=torch.float16,
+    variant="fp16",
 ).to("cuda")
 
 
@@ -211,9 +213,13 @@ embedding_path = hf_hub_download(repo_id=repo_id, filename="3d-icon-SDXL-LoRA_em
 
 state_dict = load_file(embedding_path)
 # load embeddings of text_encoder 1 (CLIP ViT-L/14)
-pipe.load_textual_inversion(state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder, tokenizer=pipe.tokenizer)
+pipe.load_textual_inversion(
+    state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder, tokenizer=pipe.tokenizer
+)
 # load embeddings of text_encoder 2 (CLIP ViT-G/14)
-pipe.load_textual_inversion(state_dict["clip_g"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
+pipe.load_textual_inversion(
+    state_dict["clip_g"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2
+)
 ```
 
 3. let's generate images
@@ -357,6 +363,7 @@ The inference is a bit different:
 import torch
 from diffusers import StableDiffusionXLPipeline, AutoencoderKL
 
+
 # taken & modified from B-LoRA repo - https://github.com/yardenfren1996/B-LoRA/blob/main/blora_utils.py
 def is_belong_to_blocks(key, blocks):
     try:
@@ -365,12 +372,14 @@ def is_belong_to_blocks(key, blocks):
                 return True
         return False
     except Exception as e:
-        raise type(e)(f'failed to is_belong_to_block, due to: {e}')
+        raise type(e)(f"failed to is_belong_to_block, due to: {e}")
+
 
 def lora_lora_unet_blocks(lora_path, alpha, target_blocks):
-  state_dict, _ = pipeline.lora_state_dict(lora_path)
-  filtered_state_dict = {k: v * alpha for k, v in state_dict.items() if is_belong_to_blocks(k, target_blocks)}
-  return filtered_state_dict
+    state_dict, _ = pipeline.lora_state_dict(lora_path)
+    filtered_state_dict = {k: v * alpha for k, v in state_dict.items() if is_belong_to_blocks(k, target_blocks)}
+    return filtered_state_dict
+
 
 vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16)
 pipeline = StableDiffusionXLPipeline.from_pretrained(
@@ -380,18 +389,18 @@ pipeline = StableDiffusionXLPipeline.from_pretrained(
 ).to("cuda")
 
 # pick a blora for content/style (you can also set one to None)
-content_B_lora_path  = "lora-library/B-LoRA-teddybear"
-style_B_lora_path= "lora-library/B-LoRA-pen_sketch"
+content_B_lora_path = "lora-library/B-LoRA-teddybear"
+style_B_lora_path = "lora-library/B-LoRA-pen_sketch"
 
 
-content_B_LoRA = lora_lora_unet_blocks(content_B_lora_path,alpha=1,target_blocks=["unet.up_blocks.0.attentions.0"])
-style_B_LoRA = lora_lora_unet_blocks(style_B_lora_path,alpha=1.1,target_blocks=["unet.up_blocks.0.attentions.1"])
+content_B_LoRA = lora_lora_unet_blocks(content_B_lora_path, alpha=1, target_blocks=["unet.up_blocks.0.attentions.0"])
+style_B_LoRA = lora_lora_unet_blocks(style_B_lora_path, alpha=1.1, target_blocks=["unet.up_blocks.0.attentions.1"])
 combined_lora = {**content_B_LoRA, **style_B_LoRA}
 
 # Load both loras
 pipeline.load_lora_into_unet(combined_lora, None, pipeline.unet)
 
-#generate
+# generate
 prompt = "a [v18] in [v30] style"
 pipeline(prompt, num_images_per_prompt=4).images
 ```
@@ -422,6 +431,7 @@ Inference is the same as for B-LoRAs, except the input targeted blocks should be
 import torch
 from diffusers import StableDiffusionXLPipeline, AutoencoderKL
 
+
 # taken & modified from B-LoRA repo - https://github.com/yardenfren1996/B-LoRA/blob/main/blora_utils.py
 def is_belong_to_blocks(key, blocks):
     try:
@@ -430,12 +440,14 @@ def is_belong_to_blocks(key, blocks):
                 return True
         return False
     except Exception as e:
-        raise type(e)(f'failed to is_belong_to_block, due to: {e}')
+        raise type(e)(f"failed to is_belong_to_block, due to: {e}")
+
 
 def lora_lora_unet_blocks(lora_path, alpha, target_blocks):
-  state_dict, _ = pipeline.lora_state_dict(lora_path)
-  filtered_state_dict = {k: v * alpha for k, v in state_dict.items() if is_belong_to_blocks(k, target_blocks)}
-  return filtered_state_dict
+    state_dict, _ = pipeline.lora_state_dict(lora_path)
+    filtered_state_dict = {k: v * alpha for k, v in state_dict.items() if is_belong_to_blocks(k, target_blocks)}
+    return filtered_state_dict
+
 
 vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", dtype=torch.float16)
 pipeline = StableDiffusionXLPipeline.from_pretrained(
@@ -444,14 +456,14 @@ pipeline = StableDiffusionXLPipeline.from_pretrained(
     dtype=torch.float16,
 ).to("cuda")
 
-lora_path  = "lora-library/B-LoRA-pen_sketch"
+lora_path = "lora-library/B-LoRA-pen_sketch"
 
-state_dict = lora_lora_unet_blocks(content_B_lora_path,alpha=1,target_blocks=["unet.up_blocks.0.attentions.0"])
+state_dict = lora_lora_unet_blocks(content_B_lora_path, alpha=1, target_blocks=["unet.up_blocks.0.attentions.0"])
 
 # Load trained lora layers into the unet
 pipeline.load_lora_into_unet(state_dict, None, pipeline.unet)
 
-#generate
+# generate
 prompt = "a dog in [v30] style"
 pipeline(prompt, num_images_per_prompt=4).images
 ```

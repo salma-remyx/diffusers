@@ -59,6 +59,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -139,7 +140,8 @@ from huggingface_hub import snapshot_download
 local_dir = "./3d_icon"
 snapshot_download(
     "LinoyTsaban/3d_icon",
-    local_dir=local_dir, repo_type="dataset",
+    local_dir=local_dir,
+    repo_type="dataset",
     ignore_patterns=".gitattributes",
 )
 ```
@@ -294,7 +296,7 @@ from safetensors.torch import load_file
 username = "linoyts"
 repo_id = f"{username}/3d-icon-Flux-LoRA"
 
-pipe = AutoPipelineForText2Image.from_pretrained("black-forest-labs/FLUX.1-dev", dtype=torch.bfloat16).to('cuda')
+pipe = AutoPipelineForText2Image.from_pretrained("black-forest-labs/FLUX.1-dev", dtype=torch.bfloat16).to("cuda")
 
 
 pipe.load_lora_weights(repo_id, weight_name="pytorch_lora_weights.safetensors")
@@ -311,9 +313,13 @@ embedding_path = hf_hub_download(repo_id=repo_id, filename="3d-icon-Flux-LoRA_em
 
 state_dict = load_file(embedding_path)
 # load embeddings of text_encoder 1 (CLIP ViT-L/14)
-pipe.load_textual_inversion(state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder, tokenizer=pipe.tokenizer)
+pipe.load_textual_inversion(
+    state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder, tokenizer=pipe.tokenizer
+)
 # load embeddings of text_encoder 2 (T5 XXL) - ignore this line if you didn't enable `--enable_t5_ti`
-pipe.load_textual_inversion(state_dict["t5"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
+pipe.load_textual_inversion(
+    state_dict["t5"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2
+)
 ```
 
 3. let's generate images
@@ -342,7 +348,7 @@ from safetensors.torch import load_file
 username = "linoyts"
 repo_id = f"{username}/3d-icon-Flux-LoRA"
 
-pipe = AutoPipelineForText2Image.from_pretrained("black-forest-labs/FLUX.1-dev", dtype=torch.bfloat16).to('cuda')
+pipe = AutoPipelineForText2Image.from_pretrained("black-forest-labs/FLUX.1-dev", dtype=torch.bfloat16).to("cuda")
 
 text_encoders = [pipe.text_encoder, pipe.text_encoder_2]
 tokenizers = [pipe.tokenizer, pipe.tokenizer_2]
@@ -351,9 +357,13 @@ embedding_path = hf_hub_download(repo_id=repo_id, filename="3d-icon-Flux-LoRA_em
 
 state_dict = load_file(embedding_path)
 # load embeddings of text_encoder 1 (CLIP ViT-L/14)
-pipe.load_textual_inversion(state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder, tokenizer=pipe.tokenizer)
+pipe.load_textual_inversion(
+    state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder, tokenizer=pipe.tokenizer
+)
 # load embeddings of text_encoder 2 (T5 XXL) - ignore this line if you didn't enable `--enable_t5_ti`
-pipe.load_textual_inversion(state_dict["t5"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
+pipe.load_textual_inversion(
+    state_dict["t5"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2
+)
 ```
 2. let's generate images
 

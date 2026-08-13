@@ -117,6 +117,7 @@ Or if your environment doesn't support an interactive shell (e.g., a notebook)
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -217,7 +218,9 @@ from diffusers.utils import export_to_video
 
 pipe = CogVideoXPipeline.from_pretrained("THUDM/CogVideoX-2b", dtype=torch.float16)
 # pipe.load_lora_weights("/path/to/lora/weights", adapter_name="cogvideox-lora") # Or,
-pipe.load_lora_weights("my-awesome-hf-username/my-awesome-lora-name", adapter_name="cogvideox-lora") # If loading from the HF Hub
+pipe.load_lora_weights(
+    "my-awesome-hf-username/my-awesome-lora-name", adapter_name="cogvideox-lora"
+)  # If loading from the HF Hub
 pipe.to("cuda")
 
 # Assuming lora_alpha=32 and rank=64 for training. If different, set accordingly

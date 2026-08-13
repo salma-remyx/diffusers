@@ -38,6 +38,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -268,9 +269,7 @@ base_model_path = "path to model"
 controlnet_path = "path to controlnet"
 
 controlnet = ControlNetModel.from_pretrained(controlnet_path, dtype=torch.float16)
-pipe = StableDiffusionControlNetPipeline.from_pretrained(
-    base_model_path, controlnet=controlnet, dtype=torch.float16
-)
+pipe = StableDiffusionControlNetPipeline.from_pretrained(base_model_path, controlnet=controlnet, dtype=torch.float16)
 
 # speed up diffusion process with faster scheduler and memory optimization
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
@@ -284,9 +283,7 @@ prompt = "pale golden rod circle with old lace background"
 
 # generate image
 generator = torch.manual_seed(0)
-image = pipe(
-    prompt, num_inference_steps=20, generator=generator, image=control_image
-).images[0]
+image = pipe(prompt, num_inference_steps=20, generator=generator, image=control_image).images[0]
 image.save("./output.png")
 ```
 
@@ -326,6 +323,7 @@ To verify that JAX was correctly installed, you can run the following command:
 
 ```py
 import jax
+
 jax.device_count()
 ```
 

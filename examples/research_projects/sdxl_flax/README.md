@@ -45,6 +45,7 @@ from flax.jax_utils import replicate
 from diffusers import FlaxStableDiffusionXLPipeline
 
 from jax.experimental.compilation_cache import compilation_cache as cc
+
 cc.initialize_cache("/tmp/sdxl_cache")
 import time
 
@@ -105,8 +106,8 @@ This function tokenizes the given prompts. It's essential because the text encod
 ```python
 p_params = replicate(params)
 
-def replicate_all(prompt_ids, neg_prompt_ids, seed):
-    ...
+
+def replicate_all(prompt_ids, neg_prompt_ids, seed): ...
 ```
 To utilize JAX's parallel capabilities, the parameters and input tensors are duplicated across devices. The `replicate_all` function also ensures that every device produces a different image by creating a unique random seed for each device.
 
@@ -159,31 +160,33 @@ cannot be changed without modifying the code and recompiling.
 
 ```python
 def aot_compile(
-        prompt=default_prompt,
-        negative_prompt=default_neg_prompt,
-        seed=default_seed,
-        guidance_scale=default_guidance_scale,
-        num_inference_steps=default_num_steps
+    prompt=default_prompt,
+    negative_prompt=default_neg_prompt,
+    seed=default_seed,
+    guidance_scale=default_guidance_scale,
+    num_inference_steps=default_num_steps,
 ):
     prompt_ids, neg_prompt_ids = tokenize_prompt(prompt, negative_prompt)
     prompt_ids, neg_prompt_ids, rng = replicate_all(prompt_ids, neg_prompt_ids, seed)
     g = jnp.array([guidance_scale] * prompt_ids.shape[0], dtype=jnp.float32)
     g = g[:, None]
 
-    return pmap(
-        pipeline._generate,static_broadcasted_argnums=[3, 4, 5, 9]
-        ).lower(
+    return (
+        pmap(pipeline._generate, static_broadcasted_argnums=[3, 4, 5, 9])
+        .lower(
             prompt_ids,
             p_params,
             rng,
-            num_inference_steps, # num_inference_steps
-            height, # height
-            width, # width
+            num_inference_steps,  # num_inference_steps
+            height,  # height
+            width,  # width
             g,
             None,
             neg_prompt_ids,
-            False # return_latents
-            ).compile()
+            False,  # return_latents
+        )
+        .compile()
+    )
 ````
 
 Next we can compile the generate function by executing `aot_compile`.
@@ -197,26 +200,15 @@ print(f"Compiled in {time.time() - start}")
 And again we put everything together in a `generate` function.
 
 ```python
-def generate(
-    prompt,
-    negative_prompt,
-    seed=default_seed,
-    guidance_scale=default_guidance_scale
-):
+def generate(prompt, negative_prompt, seed=default_seed, guidance_scale=default_guidance_scale):
     prompt_ids, neg_prompt_ids = tokenize_prompt(prompt, negative_prompt)
     prompt_ids, neg_prompt_ids, rng = replicate_all(prompt_ids, neg_prompt_ids, seed)
     g = jnp.array([guidance_scale] * prompt_ids.shape[0], dtype=jnp.float32)
     g = g[:, None]
-    images = p_generate(
-        prompt_ids,
-        p_params,
-        rng,
-        g,
-        None,
-        neg_prompt_ids)
+    images = p_generate(prompt_ids, p_params, rng, g, None, neg_prompt_ids)
 
     # convert the images to PIL
-    images = images.reshape((images.shape[0] * images.shape[1], ) + images.shape[-3:])
+    images = images.reshape((images.shape[0] * images.shape[1],) + images.shape[-3:])
     return pipeline.numpy_to_pil(np.array(images))
 ```
 

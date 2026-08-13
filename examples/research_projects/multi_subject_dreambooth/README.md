@@ -38,6 +38,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -99,24 +100,24 @@ import json
 # here we are using parameters for prior-preservation and validation as well.
 concepts_list = [
     {
-        "instance_prompt":      "drawing of a t@y meme",
-        "class_prompt":         "drawing of a meme",
-        "instance_data_dir":    "/some_folder/meme_toy",
-        "class_data_dir":       "/data/meme",
-        "validation_prompt":    "drawing of a t@y meme about football in Uruguay",
-        "validation_negative_prompt": "black and white"
+        "instance_prompt": "drawing of a t@y meme",
+        "class_prompt": "drawing of a meme",
+        "instance_data_dir": "/some_folder/meme_toy",
+        "class_data_dir": "/data/meme",
+        "validation_prompt": "drawing of a t@y meme about football in Uruguay",
+        "validation_negative_prompt": "black and white",
     },
     {
-        "instance_prompt":      "drawing of a sks sir",
-        "class_prompt":         "drawing of a sir",
-        "instance_data_dir":    "/some_other_folder/sir_sks",
-        "class_data_dir":       "/data/sir",
-        "validation_prompt":    "drawing of a sks sir with the Uruguayan sun in his chest",
+        "instance_prompt": "drawing of a sks sir",
+        "class_prompt": "drawing of a sir",
+        "instance_data_dir": "/some_other_folder/sir_sks",
+        "class_data_dir": "/data/sir",
+        "validation_prompt": "drawing of a sks sir with the Uruguayan sun in his chest",
         "validation_negative_prompt": "an old man",
         "validation_guidance_scale": 20,
         "validation_number_images": 3,
-        "validation_inference_steps": 10
-    }
+        "validation_inference_steps": 10,
+    },
 ]
 
 with open("concepts_list.json", "w") as f:

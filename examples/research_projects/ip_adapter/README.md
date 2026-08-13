@@ -40,6 +40,7 @@ Or if your environment doesn't support an interactive shell e.g. a notebook
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -137,10 +138,9 @@ save_file(ip_sd, "ip_adapter.safetensors")
 ### Sample Inference Script using the CLIP Model
 
 ```python
-
 import torch
 from safetensors.torch import load_file
-from transformers import CLIPProcessor, CLIPModel  # Using the Hugging Face CLIP model 
+from transformers import CLIPProcessor, CLIPModel  # Using the Hugging Face CLIP model
 
 # Load model components from safetensors
 image_proj_ckpt = "image_proj.safetensors"
@@ -149,6 +149,7 @@ ip_adapter_ckpt = "ip_adapter.safetensors"
 # Load the saved weights
 image_proj_sd = load_file(image_proj_ckpt)
 ip_adapter_sd = load_file(ip_adapter_ckpt)
+
 
 # Define the model Parameters
 class ImageProjectionModel(torch.nn.Module):
@@ -159,6 +160,7 @@ class ImageProjectionModel(torch.nn.Module):
     def forward(self, x):
         return self.model(x)
 
+
 class IPAdapterModel(torch.nn.Module):
     def __init__(self, input_dim=512, output_dim=10):  # Example for 10 classes
         super().__init__()
@@ -166,6 +168,7 @@ class IPAdapterModel(torch.nn.Module):
 
     def forward(self, x):
         return self.model(x)
+
 
 # Initialize models
 image_proj_model = ImageProjectionModel()
@@ -179,7 +182,8 @@ ip_adapter_model.load_state_dict(ip_adapter_sd)
 image_proj_model.eval()
 ip_adapter_model.eval()
 
-#Inference pipeline
+
+# Inference pipeline
 def inference(image_tensor):
     """
     Run inference using the loaded models.
@@ -199,11 +203,12 @@ def inference(image_tensor):
 
     return result
 
+
 # Using CLIP for image preprocessing
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 
-#Image file path
+# Image file path
 image_path = "path/to/image.jpg"
 
 # Preprocess the image

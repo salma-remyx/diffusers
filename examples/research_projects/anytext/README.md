@@ -23,18 +23,30 @@ from anytext_controlnet import AnyTextControlNetModel
 from diffusers.utils import load_image
 
 
-anytext_controlnet = AnyTextControlNetModel.from_pretrained("tolgacangoz/anytext-controlnet", dtype=torch.float16,
-                                                            variant="fp16",)
-pipe = DiffusionPipeline.from_pretrained("tolgacangoz/anytext", font_path="arial-unicode-ms.ttf",
-                                          controlnet=anytext_controlnet, dtype=torch.float16,
-                                          trust_remote_code=False,  # One needs to give permission to run this pipeline's code
-                                          ).to("cuda")
+anytext_controlnet = AnyTextControlNetModel.from_pretrained(
+    "tolgacangoz/anytext-controlnet",
+    dtype=torch.float16,
+    variant="fp16",
+)
+pipe = DiffusionPipeline.from_pretrained(
+    "tolgacangoz/anytext",
+    font_path="arial-unicode-ms.ttf",
+    controlnet=anytext_controlnet,
+    dtype=torch.float16,
+    trust_remote_code=False,  # One needs to give permission to run this pipeline's code
+).to("cuda")
 
 # generate image
-prompt = 'photo of caramel macchiato coffee on the table, top-down perspective, with "Any" "Text" written on it using cream'
+prompt = (
+    'photo of caramel macchiato coffee on the table, top-down perspective, with "Any" "Text" written on it using cream'
+)
 draw_pos = load_image("https://raw.githubusercontent.com/tyxsspa/AnyText/refs/heads/main/example_images/gen9.png")
 # There are two modes: "generate" and "edit". "edit" mode requires `ori_image` parameter for the image to be edited.
-image = pipe(prompt, num_inference_steps=20, mode="generate", draw_pos=draw_pos,
-             ).images[0]
+image = pipe(
+    prompt,
+    num_inference_steps=20,
+    mode="generate",
+    draw_pos=draw_pos,
+).images[0]
 image
 ```

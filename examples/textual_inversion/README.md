@@ -52,7 +52,9 @@ Let's first download it locally:
 from huggingface_hub import snapshot_download
 
 local_dir = "./cat"
-snapshot_download("diffusers/cat_toy_example", local_dir=local_dir, repo_type="dataset", ignore_patterns=".gitattributes")
+snapshot_download(
+    "diffusers/cat_toy_example", local_dir=local_dir, repo_type="dataset", ignore_patterns=".gitattributes"
+)
 ```
 
 This will be our training data.
@@ -107,7 +109,7 @@ from diffusers import StableDiffusionPipeline
 import torch
 
 model_id = "path-to-your-trained-model"
-pipe = StableDiffusionPipeline.from_pretrained(model_id,dtype=torch.float16).to("cuda")
+pipe = StableDiffusionPipeline.from_pretrained(model_id, dtype=torch.float16).to("cuda")
 
 repo_id_embeds = "path-to-your-learned-embeds"
 pipe.load_textual_inversion(repo_id_embeds)

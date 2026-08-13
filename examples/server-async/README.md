@@ -123,12 +123,12 @@ Response example:
 
 ```python
 RequestScopedPipeline(
-    pipeline,                        # Base pipeline to wrap
-    mutable_attrs=None,             # Custom list of attributes to clone
-    auto_detect_mutables=True,      # Enable automatic detection of mutable attributes
-    tensor_numel_threshold=1_000_000, # Tensor size threshold for cloning
-    tokenizer_lock=None,            # Custom threading lock for tokenizers
-    wrap_scheduler=True             # Auto-wrap scheduler in BaseAsyncScheduler
+    pipeline,  # Base pipeline to wrap
+    mutable_attrs=None,  # Custom list of attributes to clone
+    auto_detect_mutables=True,  # Enable automatic detection of mutable attributes
+    tensor_numel_threshold=1_000_000,  # Tensor size threshold for cloning
+    tokenizer_lock=None,  # Custom threading lock for tokenizers
+    wrap_scheduler=True,  # Auto-wrap scheduler in BaseAsyncScheduler
 )
 ```
 
@@ -146,9 +146,9 @@ The server configuration can be modified in `serverasync.py` through the `Server
 ```python
 @dataclass
 class ServerConfigModels:
-    model: str = 'stabilityai/stable-diffusion-3.5-medium'  
-    type_models: str = 't2im'  
-    host: str = '0.0.0.0' 
+    model: str = "stabilityai/stable-diffusion-3.5-medium"
+    type_models: str = "t2im"
+    host: str = "0.0.0.0"
     port: int = 8500
 ```
 

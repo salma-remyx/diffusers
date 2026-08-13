@@ -117,13 +117,11 @@ When loading the LoRA params (that were obtained on a quantized base model) and 
 1. First, load the original model and merge the LoRA params into it:
 
 ```py
-from diffusers import FluxPipeline 
-import torch 
+from diffusers import FluxPipeline
+import torch
 
 ckpt_id = "black-forest-labs/FLUX.1-dev"
-pipeline = FluxPipeline.from_pretrained(
-    ckpt_id, text_encoder=None, text_encoder_2=None, dtype=torch.float16
-)
+pipeline = FluxPipeline.from_pretrained(ckpt_id, text_encoder=None, text_encoder_2=None, dtype=torch.float16)
 pipeline.load_lora_weights("yarn_art_lora_flux_nf4", weight_name="pytorch_lora_weights.safetensors")
 pipeline.fuse_lora()
 pipeline.unload_lora_weights()
@@ -149,14 +147,10 @@ transformer = FluxTransformer2DModel.from_pretrained(
     quantization_config=nf4_config,
     dtype=bnb_4bit_compute_dtype,
 )
-pipeline = AutoPipelineForText2Image.from_pretrained(
-    ckpt_id, transformer=transformer, dtype=bnb_4bit_compute_dtype
-)
+pipeline = AutoPipelineForText2Image.from_pretrained(ckpt_id, transformer=transformer, dtype=bnb_4bit_compute_dtype)
 pipeline.enable_model_cpu_offload()
 
-image = pipeline(
-    "a puppy in a pond, yarn art style", num_inference_steps=28, guidance_scale=3.5, height=768
-).images[0]
+image = pipeline("a puppy in a pond, yarn art style", num_inference_steps=28, guidance_scale=3.5, height=768).images[0]
 image.save("yarn_merged.png")
 ```
 

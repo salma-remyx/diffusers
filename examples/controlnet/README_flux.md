@@ -62,6 +62,7 @@ Or if your environment doesn't support an interactive shell (e.g., a notebook)
 
 ```python
 from accelerate.utils import write_basic_config
+
 write_basic_config()
 ```
 
@@ -200,7 +201,7 @@ In the train_controlnet_flux.py, We need to pre-calculate all parameters and put
 
 ```python
 def compute_embeddings(batch, proportion_empty_prompts, vae, flux_controlnet_pipeline, weight_dtype, is_train=True):
-    
+
     ### compute text embeddings
     prompt_batch = batch[args.caption_column]
     captions = []
@@ -241,7 +242,7 @@ def compute_embeddings(batch, proportion_empty_prompts, vae, flux_controlnet_pip
         pixel_latents_tmp.shape[1],
         pixel_latents_tmp.shape[2],
         pixel_latents_tmp.shape[3],
-    ) 
+    )
 
     control_values = batch["conditioning_pixel_values"]
     control_values = torch.stack([image for image in control_values]).to(dtype=weight_dtype).to(vae.device)
@@ -269,6 +270,7 @@ def compute_embeddings(batch, proportion_empty_prompts, vae, flux_controlnet_pip
         )
 
         return latent_image_ids.to(device=device, dtype=dtype)
+
     latent_image_ids = _prepare_latent_image_ids(
         batch_size=pixel_latents_tmp.shape[0],
         height=pixel_latents_tmp.shape[2],
@@ -278,7 +280,14 @@ def compute_embeddings(batch, proportion_empty_prompts, vae, flux_controlnet_pip
     )
 
     # unet_added_cond_kwargs = {"pooled_prompt_embeds": pooled_prompt_embeds, "text_ids": text_ids}
-    return {"prompt_embeds": prompt_embeds, "pooled_prompt_embeds": pooled_prompt_embeds, "text_ids": text_ids, "pixel_latents": pixel_latents, "control_latents": control_latents, "latent_image_ids": latent_image_ids}
+    return {
+        "prompt_embeds": prompt_embeds,
+        "pooled_prompt_embeds": pooled_prompt_embeds,
+        "text_ids": text_ids,
+        "pixel_latents": pixel_latents,
+        "control_latents": control_latents,
+        "latent_image_ids": latent_image_ids,
+    }
 ```
 
 Because we need images to pass through vae, we need to preprocess the images in the dataset first. At the same time, vae requires more gpu memory, so you may need to modify the `batch_size` below
@@ -319,9 +328,9 @@ def collate_fn(examples):
 
     control_latents = torch.stack([torch.tensor(example["control_latents"]) for example in examples])
     control_latents = control_latents.to(memory_format=torch.contiguous_format).float()
-    
-    latent_image_ids= torch.stack([torch.tensor(example["latent_image_ids"]) for example in examples])
-    
+
+    latent_image_ids = torch.stack([torch.tensor(example["latent_image_ids"]) for example in examples])
+
     prompt_ids = torch.stack([torch.tensor(example["prompt_embeds"]) for example in examples])
 
     pooled_prompt_embeds = torch.stack([torch.tensor(example["pooled_prompt_embeds"]) for example in examples])
@@ -361,9 +370,7 @@ for epoch in range(first_epoch, args.num_train_epochs):
                 1, pixel_latents.shape[1], pixel_latents.shape[2]
             ) * noise
 
-            guidance_vec = torch.full(
-                (noisy_latents.shape[0],), 3.5, device=noisy_latents.device, dtype=weight_dtype
-            )
+            guidance_vec = torch.full((noisy_latents.shape[0],), 3.5, device=noisy_latents.device, dtype=weight_dtype)
 
             controlnet_block_samples, controlnet_single_block_samples = flux_controlnet(
                 hidden_states=noisy_latents,
