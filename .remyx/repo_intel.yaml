@@ -35,7 +35,14 @@ observed_landing_zones:
     call_site_specifics: ''
     branch: slerpflow-spherical-trajectory-correction-for-rectified-flow
     timestamp: '2026-08-09T06:58:47Z'
-  last_observed: '2026-08-09T06:58:47Z'
+  - arxiv: 2411.06503v3
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'Public library API surface: `from diffusers import PASScheduler,
+      PASSchedulerOutput` (exported in src/diffusers/__init__.py and src/diffusers/schedulers/__init__.py
+      and wired into the lazy-import stru'
+    branch: diffusion-sampling-correction-via-approximately-10-parameter
+    timestamp: '2026-08-13T08:01:17Z'
+  last_observed: '2026-08-13T08:01:17Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -44,4 +51,4 @@ rejected_shapes:
   - arxiv: 2503.17076v1
     timestamp: '2026-08-11T07:13:46Z'
 coordination_signals: []
-last_updated: '2026-08-11T07:13:46Z'
+last_updated: '2026-08-13T08:01:17Z'
