@@ -407,6 +407,7 @@ else:
     _import_structure["schedulers"].extend(
         [
             "AmusedScheduler",
+            "BayesMCScheduler",
             "BlockRefinementScheduler",
             "BlockRefinementSchedulerOutput",
             "CMStochasticIterativeScheduler",
@@ -1244,6 +1245,7 @@ if TYPE_CHECKING or DIFFUSERS_SLOW_IMPORT:
         from .quantizers import DiffusersQuantizer
         from .schedulers import (
             AmusedScheduler,
+            BayesMCScheduler,
             BlockRefinementScheduler,
             BlockRefinementSchedulerOutput,
             CMStochasticIterativeScheduler,

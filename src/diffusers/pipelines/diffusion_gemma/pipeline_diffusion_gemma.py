@@ -22,7 +22,12 @@ import torch.nn.functional as F
 from transformers import DynamicCache, StaticCache
 
 from ...callbacks import MultiPipelineCallbacks, PipelineCallback
-from ...schedulers import BlockRefinementScheduler, DiscreteDDIMScheduler, EntropyBoundScheduler
+from ...schedulers import (
+    BayesMCScheduler,
+    BlockRefinementScheduler,
+    DiscreteDDIMScheduler,
+    EntropyBoundScheduler,
+)
 from ...utils import logging, replace_example_docstring
 from ..pipeline_utils import DiffusionPipeline
 from .pipeline_output import DiffusionGemmaPipelineOutput
@@ -67,7 +72,8 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
     Args:
         model ([`~transformers.DiffusionGemmaForBlockDiffusion`]):
             The block-diffusion denoiser (causal encoder + bidirectional decoder with tied weights).
-        scheduler ([`BlockRefinementScheduler`], [`DiscreteDDIMScheduler`] or [`EntropyBoundScheduler`]):
+        scheduler ([`BlockRefinementScheduler`], [`DiscreteDDIMScheduler`], [`EntropyBoundScheduler`] or
+        [`BayesMCScheduler`]):
             The sampler that commits and renoises canvas tokens each denoising step.
         processor ([`~transformers.ProcessorMixin`]):
             The processor used to apply the chat template and decode the generated tokens.
@@ -78,7 +84,7 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
     def __init__(
         self,
         model: Any,
-        scheduler: BlockRefinementScheduler | DiscreteDDIMScheduler | EntropyBoundScheduler,
+        scheduler: BlockRefinementScheduler | DiscreteDDIMScheduler | EntropyBoundScheduler | BayesMCScheduler,
         processor: Any,
     ):
         super().__init__()
@@ -203,7 +209,8 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
             gen_length (`int`, defaults to `256`):
                 Number of tokens to generate, rounded up to a multiple of the model's `canvas_length`.
             num_inference_steps (`int`, defaults to `48`):
-                Number of denoising steps per canvas.
+                Number of denoising steps per canvas. With `BayesMCScheduler`, each step runs
+                `ensemble_size` denoiser forwards to marginalize the posterior.
             temperature (`float`, defaults to `0.0`):
                 Sampling temperature for `DiscreteDDIMScheduler`/`BlockRefinementScheduler` (`0.0` is greedy);
                 `EntropyBoundScheduler` ignores it and anneals its own temperature. Other sampling knobs (e.g. `top_k`,
@@ -362,13 +369,35 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
                 # does not overwrite the tensors that self-conditioning and the scheduler read next. Both are no-ops
                 # when the decoder is not cudagraph-compiled.
                 torch.compiler.cudagraph_mark_step_begin()
-                logits = self.model(
-                    decoder_input_ids=canvas,
-                    past_key_values=past_key_values,
-                    self_conditioning_logits=self_conditioning_logits,
-                    decoder_attention_mask=mask_mapping,
-                    decoder_position_ids=decoder_position_ids,
-                ).logits.clone()
+                # Monte Carlo marginalization (https://huggingface.co/papers/2507.07586): a scheduler exposing
+                # `renoise_ensemble` (BayesMCScheduler) estimates the exact posterior by averaging the denoiser over
+                # K independent re-corruptions of the canvas, so each step runs K forwards whose token probabilities
+                # are marginalized into one set of logits the sampler then draws from.
+                if hasattr(self.scheduler, "renoise_ensemble"):
+                    views, corrupted = self.scheduler.renoise_ensemble(
+                        canvas, step_idx, text_config.vocab_size, generator=generator
+                    )
+                    ensemble_logits = torch.stack(
+                        [
+                            self.model(
+                                decoder_input_ids=view,
+                                past_key_values=past_key_values,
+                                self_conditioning_logits=self_conditioning_logits,
+                                decoder_attention_mask=mask_mapping,
+                                decoder_position_ids=decoder_position_ids,
+                            ).logits.clone()
+                            for view in views
+                        ]
+                    )
+                    logits = self.scheduler.marginalize(ensemble_logits, corrupted)
+                else:
+                    logits = self.model(
+                        decoder_input_ids=canvas,
+                        past_key_values=past_key_values,
+                        self_conditioning_logits=self_conditioning_logits,
+                        decoder_attention_mask=mask_mapping,
+                        decoder_position_ids=decoder_position_ids,
+                    ).logits.clone()
 
                 # Pass only the kwargs the chosen scheduler accepts, so any of the schedulers can drive the pipeline.
                 # Sampling knobs (temperature annealing, thresholds, top-k, ...) live on the scheduler config, not here.

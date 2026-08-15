@@ -154,6 +154,44 @@ class DiffusionGemmaPipelineTest(unittest.TestCase):
             )
             self.assertEqual(out.sequences.shape, (1, self.canvas_length))
 
+    def test_bayes_mc_marginalization_runs_k_forwards_per_step(self):
+        # The BayesMC ensemble (https://huggingface.co/papers/2507.07586) re-corrupts the canvas K times per step and
+        # averages the denoiser outputs, so the model must be called exactly K times per denoising step.
+        from diffusers import BayesMCScheduler
+
+        self.pipe.scheduler = BayesMCScheduler(ensemble_size=3)
+        calls = 0
+        original_model = self.pipe.model
+
+        class _CountingModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.inner = original_model
+                self.config = original_model.config
+                self.model = original_model.model
+
+            def forward(self, *args, **kwargs):
+                nonlocal calls
+                calls += 1
+                return self.inner(*args, **kwargs)
+
+        self.pipe.model = _CountingModel()
+        try:
+            num_steps = 4
+            out = self.pipe(
+                prompt=self.prompt,
+                gen_length=self.canvas_length,
+                num_inference_steps=num_steps,
+                temperature=0.0,
+                eos_early_stop=False,
+                confidence_threshold=None,
+                output_type="seq",
+            )
+            self.assertEqual(out.sequences.shape, (1, self.canvas_length))
+            self.assertEqual(calls, num_steps * 3)
+        finally:
+            self.pipe.model = original_model
+
     def test_predictor_corrector_sampling(self):
         from diffusers import DiscreteDDIMScheduler
 
