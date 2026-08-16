@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from transformers import DynamicCache, StaticCache
 
 from ...callbacks import MultiPipelineCallbacks, PipelineCallback
-from ...schedulers import BlockRefinementScheduler, DiscreteDDIMScheduler, EntropyBoundScheduler
+from ...schedulers import BlockRefinementScheduler, DiscreteDDIMScheduler, EntropyBoundScheduler, HaltonScheduler
 from ...utils import logging, replace_example_docstring
 from ..pipeline_utils import DiffusionPipeline
 from .pipeline_output import DiffusionGemmaPipelineOutput
@@ -67,7 +67,8 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
     Args:
         model ([`~transformers.DiffusionGemmaForBlockDiffusion`]):
             The block-diffusion denoiser (causal encoder + bidirectional decoder with tied weights).
-        scheduler ([`BlockRefinementScheduler`], [`DiscreteDDIMScheduler`] or [`EntropyBoundScheduler`]):
+        scheduler ([`BlockRefinementScheduler`], [`DiscreteDDIMScheduler`], [`EntropyBoundScheduler`] or
+        [`HaltonScheduler`]):
             The sampler that commits and renoises canvas tokens each denoising step.
         processor ([`~transformers.ProcessorMixin`]):
             The processor used to apply the chat template and decode the generated tokens.
@@ -78,7 +79,7 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
     def __init__(
         self,
         model: Any,
-        scheduler: BlockRefinementScheduler | DiscreteDDIMScheduler | EntropyBoundScheduler,
+        scheduler: BlockRefinementScheduler | DiscreteDDIMScheduler | EntropyBoundScheduler | HaltonScheduler,
         processor: Any,
     ):
         super().__init__()
@@ -206,8 +207,9 @@ class DiffusionGemmaPipeline(DiffusionPipeline):
                 Number of denoising steps per canvas.
             temperature (`float`, defaults to `0.0`):
                 Sampling temperature for `DiscreteDDIMScheduler`/`BlockRefinementScheduler` (`0.0` is greedy);
-                `EntropyBoundScheduler` ignores it and anneals its own temperature. Other sampling knobs (e.g. `top_k`,
-                `threshold`, `t_min`/`t_max`) are scheduler config; set them on the scheduler, e.g. `pipe.scheduler =
+                `EntropyBoundScheduler` and `HaltonScheduler` ignore it and anneal their own temperature. Other
+                sampling knobs (e.g. `top_k`, `threshold`, `t_min`/`t_max`) are scheduler config; set them on the
+                scheduler, e.g. `pipe.scheduler =
                 BlockRefinementScheduler.from_config(pipe.scheduler.config, top_k=...)`.
             cache_implementation (`str`, *optional*):
                 Set to `"static"` to prefill the encoder once per block into a persistent `StaticCache` and run the
